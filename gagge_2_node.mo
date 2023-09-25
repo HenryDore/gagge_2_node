@@ -1,6 +1,5 @@
 model gagge_2_node
-  parameter Real ta = 20 "air temperature, °C"; 
-  parameter Real tr = 25 "mean radiant temperature, °C";
+   // 86400 = 1 day in seconds
   parameter Real vel = 0.1 "air velocity m/s";
   parameter Real rh = 50 "realtive humidity %";
   constant Real clo = 0.5 "clothing insulation level, clo";
@@ -29,7 +28,9 @@ model gagge_2_node
   constant Real facl = 1 + 0.15 * clo "Increase in body surface area due to clothing";
   parameter Real lr = 2.2 / atm "Lewis Relation is 2.2 at sea level";
   
-  Real pa (start = rh * exp(18.6686 - (4030.183/(ta + 235))) / 100) "?";
+  Real ta (start = 20) "air temperature, °C"; 
+  Real tr (start = 20) "mean radiant temperature, °C";
+  Real pa "?";
   Real tsk (start = tskn) "skin temperature, °C";
   Real tcr (start = tcrn) "core temperature, °C";
   Real tcl (start = tcl_estimate(1)) "clothing temperature, °C";
@@ -47,7 +48,8 @@ model gagge_2_node
   Real chr (start = 4.7) "?radiative heat transfer coefficient";
   Real ctc (start = 4.7 + (3 * atm ^ (0.53))) "?combined convection & radiation coefficient";
   Real ra (start = 1 / (facl * 4.7 + (3 * atm ^ (0.53)))) "resistance of air layer to dry heat transfer";
-  Real top (start = ((4.7 * tr) + (3 * atm ^ (0.53)) * ta) /  4.7 + (3 * atm ^ (0.53))) "operative temperature, °C";
+  Real top (start = ((4.7 * 20) + (3 * atm ^ (0.53)) * 20) /  4.7 + (3 * atm ^ (0.53))) "operative temperature, °C";
+  //Real top (start = 29) "operative temperature, °C";
   Real dry;
   Real hfcs;
   Real eres;
@@ -56,8 +58,8 @@ model gagge_2_node
   Real ssk;
   Real tcsk;
   Real tccr;
-  Real dtsk;
-  Real dtcr;
+  Real deltatsk (start = 0);
+  Real deltatcr (start = 0);
   Real sksig;
   Real warms;
   Real colds;
@@ -70,7 +72,7 @@ model gagge_2_node
   Real regsw (max = 500);
   Real ersw;
   Real ersw_;
-
+ // Real st;
   Real rea;
   Real recl;
   Real emax;
@@ -78,6 +80,8 @@ model gagge_2_node
   Real prsw;
   Real edif;
   Real esk_;
+ // Real ssk_;
+  //Real scr_;
   
 function tcl_estimate
   input Real temp; 
@@ -123,6 +127,7 @@ function tcl_calculate
         finished := 1;
       end if;
   end while;
+  //print("tcl_ = " + String(tcl));
 end tcl_calculate;
 
 function fnp
@@ -146,6 +151,14 @@ end fnsvp;
 
 
 equation
+  //constant
+  ta = 25;
+  //step
+  //time < 7200 then ta = 20; else ta = 10; end if; 
+  //sine  
+  //ta = -1*(2*Modelica.Math.cos((2*Modelica.Constants.pi*time/(3600*24))) + 15)+36;
+  
+  tr = ta;
 
   if clo <= 0 then
     wcrit = 0.38 * vel ^(-0.29);
@@ -155,7 +168,7 @@ equation
     icl   = 0.45;
   end if;
   
-  (chr,ctc,ra,tcl,top) = tcl_calculate(tcl,tr,chc,facl,ctc,ta,tsk,rcl);
+  (tcl,chr,ctc,top,ra) = tcl_calculate(tcl,tr,chc,facl,ta,tsk,ctc,rcl);
 
   dry = (tsk - top) / (ra+rcl);
   hfcs = (tcr - tsk) * (5.28 + 1.163 * skbf);
@@ -165,40 +178,43 @@ equation
   ssk  = hfcs - dry - esk;
   tcsk = 0.97 * alpha * wt;
   tccr = 0.97 * (1 - alpha) * wt;
-  dtsk = (ssk * 1.8258) / tcsk / 60; //deg C per minute
-  dtcr = (scr * 1.8258) / tccr / 60; //deg C per minute
+  deltatsk = (ssk * sa) / tcsk / 3600; //°C / s
+  deltatcr = (scr * sa) / tccr / 3600; //°C / s
 
-  tsk = tsk + dtsk * 1;
-  tcr = tcr + dtcr * 1;
+
+  //tsk = tsk+deltatsk;
+  //tcr = tcr+deltatcr;
+  der(tsk) = deltatsk;
+  der(tcr) = deltatcr;
+  
   tb  = alpha * tsk + (1 - alpha) * tcr;
 
-  esk = 0.1 * met;
+  esk = esk_;
   chcv = 8.600001 * (vel * atm) ^ 0.53;
   chc = 3 * atm  ^ 0.53;
   pa = rh * exp(18.6686 - (4030.183/(ta + 235))) / 100;
  
   sksig = tsk - tskn;
   crsig = tcr - tcrn;
-  bdsig = tb-tbn;
+  bdsig = tb - tbn;
 
   warms = fnp(sksig);
   colds = fnp(-sksig);
   
   warmc = fnp(crsig);
   coldc = fnp(-crsig);
-
   
   warmb = fnp(bdsig);
   coldb = fnp(-bdsig);
 
-  skbf_ = (skbfn + cdil * warmc) / (1 + cstr * colds);
+  skbf_ = (skbfn + cdil * warmc) / (1 + cstr * colds); ///SKBF is in the wrong units as always PLS FIX
 
   if skbf_ > 90 then 
     skbf = 90;
   elseif skbf_ < 0.5 then 
     skbf = 0.5;
   else
-    skbf = skbf_;
+    skbf = skbf_/3600;
   end if;
 
   regsw = csw * warmb * exp(warms / 10.7); //MAKE SURE THE MAX WORKS
@@ -208,7 +224,7 @@ equation
   rea = 1 / (lr * facl * chc);
   recl = rcl / (lr * icl);
 
-  emax = (fnsvp(tsk) - pa) / (rea + recl);
+  emax = (exp(18.6686 - 4030.183 / (tsk + 235)) - pa) / (rea + recl);
 
   if (0.06+0.94 * ersw_ / emax) > wcrit then
     pwet = wcrit;
