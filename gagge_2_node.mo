@@ -1,5 +1,5 @@
 model gagge_2_node
-  parameter Real ta = 25 "air temperature, °C"; 
+  parameter Real ta = 20 "air temperature, °C"; 
   parameter Real tr = 25 "mean radiant temperature, °C";
   parameter Real vel = 0.1 "air velocity m/s";
   parameter Real rh = 50 "realtive humidity %";
@@ -33,7 +33,9 @@ model gagge_2_node
   Real tsk (start = tskn) "skin temperature, °C";
   Real tcr (start = tcrn) "core temperature, °C";
   Real tcl (start = tcl_estimate(1)) "clothing temperature, °C";
-  Real skbf (start = skbfn) "skin blood flow, kg/hr m^2";
+  Real tb  (start = 0.1 * tskn + (1 - 0.1) * tcrn);
+  Real skbf (start = skbfn, max = 90, min = 0.5) "skin blood flow, kg/hr m^2";
+  Real skbf_ "skin blood flow test";
   Real mshiv (start = 0) "rate of energy released by shivering, W";
   Real alpha (start = 0.1) "fractional skin mass, ND";
   Real rmm (start = m ) "metabolic rate";
@@ -46,8 +48,37 @@ model gagge_2_node
   Real ctc (start = 4.7 + (3 * atm ^ (0.53))) "?combined convection & radiation coefficient";
   Real ra (start = 1 / (facl * 4.7 + (3 * atm ^ (0.53)))) "resistance of air layer to dry heat transfer";
   Real top (start = ((4.7 * tr) + (3 * atm ^ (0.53)) * ta) /  4.7 + (3 * atm ^ (0.53))) "operative temperature, °C";
+  Real dry;
+  Real hfcs;
+  Real eres;
+  Real cres;
+  Real scr;
+  Real ssk;
+  Real tcsk;
+  Real tccr;
+  Real dtsk;
+  Real dtcr;
+  Real sksig;
+  Real warms;
+  Real colds;
+  Real crsig;
+  Real warmc;
+  Real coldc;
+  Real bdsig;
+  Real warmb;
+  Real coldb;
+  Real regsw (max = 500);
+  Real ersw;
+  Real ersw_;
 
-
+  Real rea;
+  Real recl;
+  Real emax;
+  Real pwet;
+  Real prsw;
+  Real edif;
+  Real esk_;
+  
 function tcl_estimate
   input Real temp; 
   output Real tcl;
@@ -57,22 +88,26 @@ function tcl_estimate
   / ((4.7 + (3 * atm ^ (0.53))) * ((1 / (facl * 4.7 + (3 * atm ^ (0.53)))) + rcl));
 end tcl_estimate;
 
+
 function tcl_calculate
   input Real tcl;
   input Real tr;
   input Real chc;
+  input Real facl;
   input Real ta;
   input Real tsk;
   input Real ctc;
-  input Real ra;
-  output Real tcl_guess;
-    protected
-    Real chr_;
-    Real ctc_;
-    Real tcl_old;
-    Real top_;
-    Real ra_;
-    Integer finished;
+  input Real rcl;
+  output Real tcl_;
+  output Real chr_;
+  output Real ctc_;
+  output Real top_;  
+  output Real ra_;
+
+  protected
+  Real tcl_old;
+  Integer finished;
+    
   algorithm
     tcl_old := tcl;
     finished := 0;
@@ -81,9 +116,9 @@ function tcl_calculate
     ctc_ := chr_ + chc;
     ra_  := 1 / (facl * ctc_);
     top_ := (chr_ * tr + chc * ta) / ctc_;
-    tcl_guess := (ra * tsk + rcl * top_) / (ra + rcl);
-      if abs(tcl_guess - tcl_old) > .01 then
-        tcl_old := tcl_guess;
+    tcl_ := (ra_ * tsk + rcl * top_) / (ra_ + rcl);
+      if abs(tcl_ - tcl_old) > .01 then
+        tcl_old := tcl_;
       else
         finished := 1;
       end if;
@@ -94,10 +129,10 @@ function fnp
   input Real x;
   output Real result;
   algorithm
-    if value < 0 then
+    if x < 0 then
       result := 0;
       else
-      result := value;
+      result := x;
     end if;
 end fnp;
 
@@ -105,7 +140,7 @@ function fnsvp
   input Real temperature;
   output Real svp;
   algorithm
-  svp := {exp(18.6686 - 4030.183 / (temperature + 235))};
+  svp := exp(18.6686 - 4030.183 / (temperature + 235));
 end fnsvp;
 
 
@@ -120,21 +155,83 @@ equation
     icl   = 0.45;
   end if;
   
-  tcl = tcl_calculate(tcl,tr,chc,ta,tsk,ctc,ra);
+  (chr,ctc,ra,tcl,top) = tcl_calculate(tcl,tr,chc,facl,ctc,ta,tsk,rcl);
 
-  tsk = 1;
-  tcr = time*2;
-  skbf = 3;
-  mshiv = 4;
-  alpha = 4;
-  rmm = 5;
-  esk = 5;
-  chcv = 6;
-  chc = 6;
-  pa = 6;
-  chr = 7;
-  ctc = chr + chc;
-  ra = 1/facl*ctc;
-  top = 8;
+  dry = (tsk - top) / (ra+rcl);
+  hfcs = (tcr - tsk) * (5.28 + 1.163 * skbf);
+  eres = 0.0023 * m * (44 - pa);
+  cres = 0.0014 * m * (34 - ta);
+  scr  = m - hfcs - eres - cres - w; //wm and w in w/2
+  ssk  = hfcs - dry - esk;
+  tcsk = 0.97 * alpha * wt;
+  tccr = 0.97 * (1 - alpha) * wt;
+  dtsk = (ssk * 1.8258) / tcsk / 60; //deg C per minute
+  dtcr = (scr * 1.8258) / tccr / 60; //deg C per minute
+
+  tsk = tsk + dtsk * 1;
+  tcr = tcr + dtcr * 1;
+  tb  = alpha * tsk + (1 - alpha) * tcr;
+
+  esk = 0.1 * met;
+  chcv = 8.600001 * (vel * atm) ^ 0.53;
+  chc = 3 * atm  ^ 0.53;
+  pa = rh * exp(18.6686 - (4030.183/(ta + 235))) / 100;
+ 
+  sksig = tsk - tskn;
+  crsig = tcr - tcrn;
+  bdsig = tb-tbn;
+
+  warms = fnp(sksig);
+  colds = fnp(-sksig);
   
+  warmc = fnp(crsig);
+  coldc = fnp(-crsig);
+
+  
+  warmb = fnp(bdsig);
+  coldb = fnp(-bdsig);
+
+  skbf_ = (skbfn + cdil * warmc) / (1 + cstr * colds);
+
+  if skbf_ > 90 then 
+    skbf = 90;
+  elseif skbf_ < 0.5 then 
+    skbf = 0.5;
+  else
+    skbf = skbf_;
+  end if;
+
+  regsw = csw * warmb * exp(warms / 10.7); //MAKE SURE THE MAX WORKS
+
+  ersw_ = .68 * regsw;
+
+  rea = 1 / (lr * facl * chc);
+  recl = rcl / (lr * icl);
+
+  emax = (fnsvp(tsk) - pa) / (rea + recl);
+
+  if (0.06+0.94 * ersw_ / emax) > wcrit then
+    pwet = wcrit;
+    prsw = wcrit / 0.94;
+    ersw = prsw * emax;
+    edif = 0.06 * (1-prsw)*emax;
+    esk_ = ersw + edif;
+  elseif emax == 0 then
+    pwet = wcrit;
+    prsw = wcrit;
+    ersw = 0;
+    edif = 0;
+    esk_ = emax;
+  else
+    pwet = 0.06 + 0.94 * prsw;
+    prsw = ersw / emax;
+    ersw = 0.68 * regsw;
+    edif = pwet * emax - ersw;
+    esk_ = ersw + edif;
+  end if;
+  
+    mshiv = 19.4 * colds * coldc;
+    m = rmm + mshiv;
+    alpha =  0.0417737 + 0.7451833 / (skbf + 0.585417);
+
 end gagge_2_node;
