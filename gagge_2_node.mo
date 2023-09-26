@@ -1,5 +1,6 @@
 model gagge_2_node
    // 86400 = 1 day in seconds
+   // 3600 = 1 hour in seconds
   constant Real clo = 0.5 "clothing insulation level, clo";
   constant Real met = 1 "metabolic rate, met";
   constant Real wme = 0 "external work, met";
@@ -16,21 +17,20 @@ model gagge_2_node
   constant Real atm = pb / 760 "atmospheric pressure, atm";
   constant Real rcl = 0.155 * clo "thermal resistance of clothing ensemble, °C m^2/W";
   constant Real facl = 1 + 0.15 * clo "Increase in body surface area due to clothing";
+  constant Real tu = 40 "turbulence intensity, %";
+  constant Real vel = 0.1 "air velocity m/s";
+  constant Real rh = 50 "relative humidity %";
+  constant Real csw = 170 "driving coefficient for regulatory sweating, 1";
+  constant Real cdil = 120 "driving coefficient for vasodilation, 1";
+  constant Real cstr = 0.5 "driving coefficient for vasoconstriction, 1";  
+  constant Real lr = 2.2 / atm "Lewis Relation is 2.2 at sea level";
+ 
   Real m (start = met * 58.2) "metabolic rate, W";
- 
-  parameter Real vel = 0.1 "air velocity m/s";
-  parameter Real rh = 50 "relative humidity %";
-  parameter Real tu = 40 "turbulence intensity, %";
-  parameter Real csw = 170 "driving coefficient for regulatory sweating, 1";
-  parameter Real cdil = 120 "driving coefficient for vasodilation, 1";
-  parameter Real cstr = 0.5 "driving coefficient for vasoconstriction, 1";  
-  parameter Real lr = 2.2 / atm "Lewis Relation is 2.2 at sea level";
- 
   Real ta (start = 20) "air temperature, °C"; 
   Real tr (start = 20) "mean radiant temperature, °C";
   Real pa "partial vapour pressure of water, mmHg";
-  Real tsk (start = tskn) "skin temperature, °C";
-  Real tcr (start = tcrn) "core temperature, °C";
+  Real tsk (start = tskn, fixed = true) "skin temperature, °C";
+  Real tcr (start = tcrn, fixed = true) "core temperature, °C";
   Real tcl (start = tskn) "clothing temperature, °C";
   Real tb  (start = 0.1 * tskn + (1 - 0.1) * tcrn);
   Real skbf (start = skbfn) "skin blood flow, kg/hr m^2";
@@ -116,12 +116,12 @@ end tcl_calculate;
 
 function fnp //make negative part of signals = 0
   input Real x;
-  output Real result;
+  output Real y;
   algorithm
     if x < 0 then
-      result := 0;
+      y := 0;
       else
-      result := x;
+      y := x;
     end if;
 end fnp;
 
@@ -132,11 +132,9 @@ function fnsvp //find saturated vapour pressure
   svp := exp(18.6686 - 4030.183 / (temperature + 235));
 end fnsvp;
 
-
-
 equation
   //constant
-  ta = 10;
+  ta = 30;
   //step
   //if time < 7200 then ta = 20; else ta = 15; end if; 
   //sine  
@@ -206,7 +204,7 @@ equation
     ersw = prsw * emax;
     edif = 0.06 * (1-prsw)*emax;
     esk_ = ersw + edif;
-  elseif emax == 0 then
+  elseif emax <= 0 then
     pwet = wcrit;
     prsw = wcrit;
     ersw = 0;
