@@ -16,7 +16,7 @@ model gagge_2_node
   constant Real atm = pb / 760 "atmospheric pressure, atm";
   constant Real rcl = 0.155 * clo "thermal resistance of clothing ensemble, °C m^2/W";
   constant Real facl = 1 + 0.15 * clo "Increase in body surface area due to clothing";
-  constant Real m = met * 58.2 "metabolic rate, W";
+  Real m (start = met * 58.2) "metabolic rate, W";
  
   parameter Real vel = 0.1 "air velocity m/s";
   parameter Real rh = 50 "relative humidity %";
@@ -31,13 +31,13 @@ model gagge_2_node
   Real pa "partial vapour pressure of water, mmHg";
   Real tsk (start = tskn) "skin temperature, °C";
   Real tcr (start = tcrn) "core temperature, °C";
-  Real tcl (start = tcl_estimate(1)) "clothing temperature, °C";
+  Real tcl (start = tskn) "clothing temperature, °C";
   Real tb  (start = 0.1 * tskn + (1 - 0.1) * tcrn);
   Real skbf (start = skbfn) "skin blood flow, kg/hr m^2";
   Real skbf_ "skin blood flow test";
   Real mshiv (start = 0) "rate of energy released by shivering, W";
   Real alpha (start = 0.1) "fractional skin mass, 1";
-  Real rmm (start = 58.2 ) "metabolic rate, W";
+  constant Real rmm = 58.2  "metabolic rate, W";
   Real esk (start = 0.1 * met) "total evaporative heat loss from the skin W";
   Real wcrit "evaporative efficiency, 1";
   Real icl "";
@@ -76,16 +76,6 @@ model gagge_2_node
   Real prsw "ratio of actual heat loss due to sweating to maximum heat loss due to sweating";
   Real edif "heat loss due to diffusion of water fvapout rhough the skin";
   Real esk_ "also total evaporative heat loss from the skin W";
-  
-function tcl_estimate //initial clothing temperature estimate
-  input Real temp; 
-  output Real tcl;
-  algorithm
-  tcl := ((4.7 * 25) + (3 * atm ^ (0.53)) * 25) /  4.7 + (3 * atm ^ (0.53))
-  + (tskn - ((4.7 * 25) + (3 * atm ^ (0.53)) * 25) /  4.7 + (3 * atm ^ (0.53)))
-  / ((4.7 + (3 * atm ^ (0.53))) * ((1 / (facl * 4.7 + (3 * atm ^ (0.53)))) + rcl));
-end tcl_estimate;
-
 
 function tcl_calculate //calculate tcl, chr, ctc, top & ra iteratively
   input Real tcl;
@@ -124,7 +114,7 @@ function tcl_calculate //calculate tcl, chr, ctc, top & ra iteratively
   //print("tcl_ = " + String(tcl));
 end tcl_calculate;
 
-function fnp
+function fnp //make negative part of signals = 0
   input Real x;
   output Real result;
   algorithm
@@ -135,7 +125,7 @@ function fnp
     end if;
 end fnp;
 
-function fnsvp
+function fnsvp //find saturated vapour pressure
   input Real temperature;
   output Real svp;
   algorithm
@@ -146,11 +136,12 @@ end fnsvp;
 
 equation
   //constant
-  //ta = 25;
+  ta = 10;
   //step
-  if time < 7200 then ta = 20; else ta = 10; end if; 
+  //if time < 7200 then ta = 20; else ta = 15; end if; 
   //sine  
   //ta = -1*(2*Modelica.Math.cos((2*Modelica.Constants.pi*time/(3600*24))) + 15)+36;
+  
   tr = ta; ///find a better formula for tr
 
   if clo <= 0 then
