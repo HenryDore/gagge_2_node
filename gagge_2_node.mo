@@ -1,89 +1,83 @@
 model gagge_2_node
    // 86400 = 1 day in seconds
-  parameter Real vel = 0.1 "air velocity m/s";
-  parameter Real rh = 50 "realtive humidity %";
   constant Real clo = 0.5 "clothing insulation level, clo";
   constant Real met = 1 "metabolic rate, met";
   constant Real wme = 0 "external work, met";
   constant Real pb = 760 "barometric pressure, torr or mmHg";
-  parameter Real ltime = 60 "exposure time, minutes";
   constant Real ht = 170 "height, cm";
   constant Real wt = 70 "weight, kg";
-  parameter Real tu = 40 "turbulence intensity, %";
-  parameter Real csw = 170 "driving coefficient for regulatory sweating";
-  parameter Real cdil = 120 "driving coefficient for vasodilation";
-  parameter Real cstr = 0.5 "driving coefficient for vasoconstriction";  
-  constant Real tskn = 33.7 "setpoint (neutral) value for tsk";
-  constant Real tcrn = 36.8 "setpoint value for tcr";
-  constant Real tbn = 36.8 "setpoint value for tb (.1*tskn + .9*tcrn)";
-  constant Real skbfn = 6.3 "neutral value for skbf";
+  constant Real tskn = 33.7 "setpoint value for skin temperature, °C";
+  constant Real tcrn = 36.8 "setpoint value for core temperature, °C";
+  constant Real tbn = 36.8 "setpoint value for blood temperature (.1*tskn + .9*tcrn), °C";
+  constant Real skbfn = 6.3 "neutral value for skin blood flow";
   constant Real sbc = 5.6697 * 10 ^ (-08) "stephan-Boltzmann constant";
   constant Real sa = ((ht * wt) / 3600 ) ^ .5 "surface Area (m2) according to mosteller formula";
-  constant Real m = met * 58.2 "metabolic rate, w/m^2";
   constant Real w = wme * 58.2 "external work, w/m^2";
-  parameter Real mw = m-w "metabolism - work, w/m^2";
   constant Real atm = pb / 760 "atmospheric pressure, atm";
-  parameter Real timeh = ltime / 60 "run time in hours";
   constant Real rcl = 0.155 * clo "thermal resistance of clothing ensemble, °C m^2/W";
   constant Real facl = 1 + 0.15 * clo "Increase in body surface area due to clothing";
+  constant Real m = met * 58.2 "metabolic rate, W";
+ 
+  parameter Real vel = 0.1 "air velocity m/s";
+  parameter Real rh = 50 "relative humidity %";
+  parameter Real tu = 40 "turbulence intensity, %";
+  parameter Real csw = 170 "driving coefficient for regulatory sweating, 1";
+  parameter Real cdil = 120 "driving coefficient for vasodilation, 1";
+  parameter Real cstr = 0.5 "driving coefficient for vasoconstriction, 1";  
   parameter Real lr = 2.2 / atm "Lewis Relation is 2.2 at sea level";
-  
+ 
   Real ta (start = 20) "air temperature, °C"; 
   Real tr (start = 20) "mean radiant temperature, °C";
-  Real pa "?";
+  Real pa "partial vapour pressure of water, mmHg";
   Real tsk (start = tskn) "skin temperature, °C";
   Real tcr (start = tcrn) "core temperature, °C";
   Real tcl (start = tcl_estimate(1)) "clothing temperature, °C";
   Real tb  (start = 0.1 * tskn + (1 - 0.1) * tcrn);
-  Real skbf (start = skbfn, max = 90, min = 0.5) "skin blood flow, kg/hr m^2";
+  Real skbf (start = skbfn) "skin blood flow, kg/hr m^2";
   Real skbf_ "skin blood flow test";
   Real mshiv (start = 0) "rate of energy released by shivering, W";
-  Real alpha (start = 0.1) "fractional skin mass, ND";
-  Real rmm (start = m ) "metabolic rate";
-  Real esk (start = 0.1 * met) "total evaporative heat loss from the skin W/m^2";
-  Real wcrit;
-  Real icl;
-  Real chc (start = 3 * atm ^ (0.53)) "?coductive heat transfer coefficient";
-  Real chcv (start = 8.600001 * (vel * atm) ^ 0.53) "?convective heat transfer coefficient";
-  Real chr (start = 4.7) "?radiative heat transfer coefficient";
+  Real alpha (start = 0.1) "fractional skin mass, 1";
+  Real rmm (start = 58.2 ) "metabolic rate, W";
+  Real esk (start = 0.1 * met) "total evaporative heat loss from the skin W";
+  Real wcrit "evaporative efficiency, 1";
+  Real icl "";
+  Real chc (start = 3 * atm ^ (0.53)) "coductive heat transfer coefficient";
+  Real chcv (start = 8.600001 * (vel * atm) ^ 0.53) "convective heat transfer coefficient";
+  Real chr (start = 4.7) "radiative heat transfer coefficient";
   Real ctc (start = 4.7 + (3 * atm ^ (0.53))) "?combined convection & radiation coefficient";
-  Real ra (start = 1 / (facl * 4.7 + (3 * atm ^ (0.53)))) "resistance of air layer to dry heat transfer";
+  Real ra (start = 1 / (facl * 4.7 + (3 * atm ^ (0.53)))) "resistance of air layer to dry heat transfer, °C m^2 / W";
   Real top (start = ((4.7 * 20) + (3 * atm ^ (0.53)) * 20) /  4.7 + (3 * atm ^ (0.53))) "operative temperature, °C";
-  //Real top (start = 29) "operative temperature, °C";
-  Real dry;
-  Real hfcs;
-  Real eres;
-  Real cres;
-  Real scr;
-  Real ssk;
-  Real tcsk;
-  Real tccr;
-  Real deltatsk (start = 0);
-  Real deltatcr (start = 0);
-  Real sksig;
-  Real warms;
-  Real colds;
-  Real crsig;
-  Real warmc;
-  Real coldc;
-  Real bdsig;
-  Real warmb;
-  Real coldb;
-  Real regsw (max = 500);
-  Real ersw;
-  Real ersw_;
- // Real st;
-  Real rea;
-  Real recl;
-  Real emax;
-  Real pwet;
-  Real prsw;
-  Real edif;
-  Real esk_;
- // Real ssk_;
-  //Real scr_;
+  Real dry "total sensible heat loss, W";
+  Real hfcs "rate of energy transport between core and skin, W";
+  Real eres "heat loss through respiratory evaporation, W";
+  Real cres "heat loss through respiratory convection, W";
+  Real scr "rate of energy storage in the core, W";
+  Real ssk "rate of enery storage in the skin, ";
+  Real tcsk "alpha*wt*Cb";
+  Real tccr "(1-alpha)*wt*Cb";
+  Real deltatsk (start = 0) "rate of change of skin temperature, °C" ;
+  Real deltatcr (start = 0) "rate of change of core temperature, °C";
+  Real sksig "skin signal ,1";
+  Real warms "skin warm signal ,1";
+  Real colds "skin cold signal ,1";
+  Real crsig "core signal ,1";
+  Real warmc "core warm signal ,1";
+  Real coldc "core cold signal ,1";
+  Real bdsig "blood signal ,1";
+  Real warmb "blood warm signal ,1";
+  Real coldb "blood cold signal ,1";
+  Real regsw "regulatory sweating, g/m^2 hr";
+  Real ersw "heat loss through sweating, W";
+  Real ersw_"also heat loss through sweating, W";
+  Real rea "resistance of air layer to dry heat transfer, °C m^2 / W";
+  Real recl "resistance of clothing layer to dry heat transfer, °C m^2 / W";
+  Real emax "maximum evapourative capacity, W";
+  Real pwet "skin wettedness, 1";
+  Real prsw "ratio of actual heat loss due to sweating to maximum heat loss due to sweating";
+  Real edif "heat loss due to diffusion of water fvapout rhough the skin";
+  Real esk_ "also total evaporative heat loss from the skin W";
   
-function tcl_estimate
+function tcl_estimate //initial clothing temperature estimate
   input Real temp; 
   output Real tcl;
   algorithm
@@ -93,7 +87,7 @@ function tcl_estimate
 end tcl_estimate;
 
 
-function tcl_calculate
+function tcl_calculate //calculate tcl, chr, ctc, top & ra iteratively
   input Real tcl;
   input Real tr;
   input Real chc;
@@ -152,13 +146,12 @@ end fnsvp;
 
 equation
   //constant
-  ta = 25;
+  //ta = 25;
   //step
-  //time < 7200 then ta = 20; else ta = 10; end if; 
+  if time < 7200 then ta = 20; else ta = 10; end if; 
   //sine  
   //ta = -1*(2*Modelica.Math.cos((2*Modelica.Constants.pi*time/(3600*24))) + 15)+36;
-  
-  tr = ta;
+  tr = ta; ///find a better formula for tr
 
   if clo <= 0 then
     wcrit = 0.38 * vel ^(-0.29);
@@ -180,16 +173,11 @@ equation
   tccr = 0.97 * (1 - alpha) * wt;
   deltatsk = (ssk * sa) / tcsk / 3600; //°C / s
   deltatcr = (scr * sa) / tccr / 3600; //°C / s
-
-
-  //tsk = tsk+deltatsk;
-  //tcr = tcr+deltatcr;
   der(tsk) = deltatsk;
   der(tcr) = deltatcr;
   
   tb  = alpha * tsk + (1 - alpha) * tcr;
 
-  esk = esk_;
   chcv = 8.600001 * (vel * atm) ^ 0.53;
   chc = 3 * atm  ^ 0.53;
   pa = rh * exp(18.6686 - (4030.183/(ta + 235))) / 100;
@@ -197,35 +185,30 @@ equation
   sksig = tsk - tskn;
   crsig = tcr - tcrn;
   bdsig = tb - tbn;
-
   warms = fnp(sksig);
   colds = fnp(-sksig);
-  
   warmc = fnp(crsig);
   coldc = fnp(-crsig);
-  
   warmb = fnp(bdsig);
   coldb = fnp(-bdsig);
 
   skbf_ = (skbfn + cdil * warmc) / (1 + cstr * colds); ///SKBF is in the wrong units as always PLS FIX
-
   if skbf_ > 90 then 
     skbf = 90;
   elseif skbf_ < 0.5 then 
     skbf = 0.5;
   else
-    skbf = skbf_/3600;
+    skbf = skbf_;
   end if;
 
   regsw = csw * warmb * exp(warms / 10.7); //MAKE SURE THE MAX WORKS
 
-  ersw_ = .68 * regsw;
-
   rea = 1 / (lr * facl * chc);
   recl = rcl / (lr * icl);
 
+  esk = esk_;
   emax = (exp(18.6686 - 4030.183 / (tsk + 235)) - pa) / (rea + recl);
-
+  ersw_ = .68 * regsw;
   if (0.06+0.94 * ersw_ / emax) > wcrit then
     pwet = wcrit;
     prsw = wcrit / 0.94;
@@ -246,8 +229,8 @@ equation
     esk_ = ersw + edif;
   end if;
   
-    mshiv = 19.4 * colds * coldc;
-    m = rmm + mshiv;
-    alpha =  0.0417737 + 0.7451833 / (skbf + 0.585417);
+  mshiv = 19.4 * colds * coldc;
+  m = rmm + mshiv;
+  alpha =  0.0417737 + 0.7451833 / (skbf + 0.585417);
 
 end gagge_2_node;
