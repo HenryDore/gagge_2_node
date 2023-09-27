@@ -24,7 +24,10 @@ model gagge_2_node
   constant Real cdil = 120 "driving coefficient for vasodilation, 1";
   constant Real cstr = 0.5 "driving coefficient for vasoconstriction, 1";  
   constant Real lr = 2.2 / atm "Lewis Relation is 2.2 at sea level";
- 
+  constant Real rmm = 58.2  "metabolic rate, W";
+
+  parameter Real set_temp = 25 "setpoint for ambient temperature";
+
   Real m (start = met * 58.2) "metabolic rate, W";
   Real ta (start = 20) "air temperature, °C"; 
   Real tr (start = 20) "mean radiant temperature, °C";
@@ -37,7 +40,6 @@ model gagge_2_node
   Real skbf_ "skin blood flow test";
   Real mshiv (start = 0) "rate of energy released by shivering, W";
   Real alpha (start = 0.1) "fractional skin mass, 1";
-  constant Real rmm = 58.2  "metabolic rate, W";
   Real esk (start = 0.1 * met) "total evaporative heat loss from the skin W";
   Real wcrit "evaporative efficiency, 1";
   Real icl "";
@@ -134,7 +136,7 @@ end fnsvp;
 
 equation
   //constant
-  ta = 20;
+  ta = set_temp;
   //step
   //if time < 7200 then ta = 20; else ta = 15; end if; 
   //sine  
