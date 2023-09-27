@@ -1,7 +1,7 @@
 # Function: Two Node model ################
 ###########################################
 # run command:
-# calc2Node(ta = 20, tr = 20, vel= 0.1, rh=50, clo = 0.5, met = 1, wme = 0, pb = 760, ltime = 60, ht = 170, wt = 70, tu = 40, obj = "set", csw = 170, cdil = 120, cstr = 0.5, varOut = "other")
+# calc2Node(ta = 30, tr = 30, vel= 0.1, rh=50, clo = 0.5, met = 1, wme = 0, pb = 760, ltime = 60, ht = 170, wt = 70, tu = 40, obj = "set", csw = 170, cdil = 120, cstr = 0.5, varOut = "other")
 #' Comfort Indices based on the 2-Node-Model
 #'
 #' @aliases calc2Node 2Node 2node
