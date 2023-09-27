@@ -134,7 +134,7 @@ end fnsvp;
 
 equation
   //constant
-  ta = 30;
+  ta = 20;
   //step
   //if time < 7200 then ta = 20; else ta = 15; end if; 
   //sine  

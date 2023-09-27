@@ -1,7 +1,7 @@
 # Function: Two Node model ################
 ###########################################
 # run command:
-# calc2Node(ta = 30, tr = 30, vel= 0.1, rh=50, clo = 0.5, met = 1, wme = 0, pb = 760, ltime = 60, ht = 170, wt = 70, tu = 40, obj = "set", csw = 170, cdil = 120, cstr = 0.5, varOut = "other")
+# calc2Node(ta = 20, tr = 20, vel= 0.1, rh=50, clo = 0.5, met = 1, wme = 0, pb = 760, ltime = 60, ht = 170, wt = 70, tu = 40, obj = "set", csw = 170, cdil = 120, cstr = 0.5, varOut = "other")
 #' Comfort Indices based on the 2-Node-Model
 #'
 #' @aliases calc2Node 2Node 2node
@@ -88,15 +88,16 @@ calc2Node <- function(ta, tr, vel, rh, clo = .5, met = 1, wme = 0, pb = 760,
   m <- met * 58.2 #[w/m2]
   w <- wme * 58.2 #[w/m2]
   mw <- m - w 
-  
-  #data <- data.frame(ta_ = 0, tb_ = 0, tcl_ = 0, tcr_ = 0, tsk_ = 0)
-
-# Create a Vector with Columns
-columns = c("ta","tb","tcl","tcr","tsk") 
-#Create a Empty DataFrame with 0 rows and n columns
-data = data.frame(matrix(nrow = 0, ncol = length(columns))) 
-# Assign column names
-colnames(data) = columns
+    
+  ################################
+  # Create data frame for export #
+  ################################
+  # Create a Vector with Columns
+  columns = c("time","ta","tb","tcl","tcr","tsk","scr","ssk","m","hfcs","eres","cres","dry","esk") 
+  #Create a Empty DataFrame with 0 rows and n columns
+  data = data.frame(matrix(nrow = 0, ncol = length(columns))) 
+  # Assign column names
+  colnames(data) = columns
 
   kclo <- .25	
   csw  <- csw   #driving coefficient for regulatory sweating
@@ -277,28 +278,13 @@ colnames(data) = columns
     mshiv <- 19.4 * colds * coldc
     m     <- rmm + mshiv
     alfa  <- .0417737 + .7451833 / (skbf + .585417)
-    #GOsUB2680 'screen output
-    #IF OUtopT<-1 TheN GOsUB 3900 'minute-by-minute hcopy output
-    #tim <- tim+dtim #IF tim<=ltime TheN GOto 1200
-
-
-   new_row <- c(ta, tb, tcl, tcr, tsk)
-   data[nrow(data)+1, ] <- new_row
-
-   
-    #print(paste(scr))
     
-    
-    
-    
-    
-    
-    
-    
-    
-
+    ###################################
+    ## write variables to data frame ##
+    ###################################
+    new_row <- c(tim-1,ta, tb, tcl, tcr, tsk,scr,ssk,m,hfcs,eres,cres,dry,esk)
+    data[nrow(data)+1, ] <- new_row
   }
-  
   #####################################################################
   # CALCULATE COMFORT INDICES
   #####################################################################
@@ -432,8 +418,11 @@ colnames(data) = columns
   rm(et, set, tsens, disc, pd, ps, pts)
   output
 
-write.csv(data, "data.csv", row.names=FALSE)
-
+############################
+## WRITE OUTPUT DATA FILE ##
+############################
+#add fake row at the end to make graph nicer.
+new_row <- c(tim,ta, tb, tcl, tcr, tsk,scr,ssk,m,hfcs,eres,cres,dry,esk)
+#write data file
+write.csv(data, "r_data.csv", row.names=FALSE)
 }
-
-# calc2Node(ta = 20, tr = 20, vel= 0.1, rh=50, clo = 0.5, met = 1, wme = 0, pb = 760, ltime = 60, ht = 170, wt = 70, tu = 40, obj = "set", csw = 170, cdil = 120, cstr = 0.5, varOut = "skinWet")
