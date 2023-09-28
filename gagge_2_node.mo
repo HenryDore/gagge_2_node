@@ -9,10 +9,12 @@ model gagge_2_node
   constant Real wt = 70 "weight, kg";
   constant Real tskn = 33.7 "setpoint value for skin temperature, °C";
   constant Real tcrn = 36.8 "setpoint value for core temperature, °C";
-  constant Real tbn = 36.8 "setpoint value for blood temperature (.1*tskn + .9*tcrn), °C";
+  constant Real tbn = 36.8 "setpoint value for mean body temperature (.1*tskn + .9*tcrn), °C";
   constant Real skbfn = 6.3 "neutral value for skin blood flow";
   constant Real sbc = 5.6697 * 10 ^ (-08) "stephan-Boltzmann constant";
-  constant Real sa = ((ht * wt) / 3600 ) ^ .5 "surface Area (m2) according to mosteller formula";
+  //Mosteller and Dubois surface area are largely the same, but the majority use Dubois 
+  //constant Real sa = ((ht * wt) / 3600 ) ^ .5 "Mosteller surface area, m^2";
+  constant Real sa = 0.203 * (ht/100)^(0.725) * wt^(0.425) "Dubois surface Area, m^2";
   constant Real w = wme * 58.2 "external work, w/m^2";
   constant Real atm = pb / 760 "atmospheric pressure, atm";
   constant Real rcl = 0.155 * clo "thermal resistance of clothing ensemble, °C m^2/W";
@@ -35,7 +37,7 @@ model gagge_2_node
   Real tsk (start = tskn, fixed = true) "skin temperature, °C";
   Real tcr (start = tcrn, fixed = true) "core temperature, °C";
   Real tcl (start = tskn) "clothing temperature, °C";
-  Real tb  (start = 0.1 * tskn + (1 - 0.1) * tcrn);
+  Real tb  (start = 0.1 * tskn + (1 - 0.1) * tcrn) "mean body temperateu,°C";
   Real skbf (start = skbfn) "skin blood flow, kg/hr m^2";
   Real skbf_ "skin blood flow test";
   Real mshiv (start = 0) "rate of energy released by shivering, W";
@@ -102,10 +104,10 @@ function tcl_calculate //calculate tcl, chr, ctc, top & ra iteratively
     tcl_old := tcl;
     finished := 0;
     while finished == 0 loop
-    chr_ := 4 * sbc * (((tcl_old + tr) / 2 + 273.15) ^ 3) * .72;
+    chr_ := 4 * sbc * (((tcl_old + tr) / 2 + 273.15) ^ 3) * .72; //ASHRAE eqn 35, can add A_r/A_d to improve
     ctc_ := chr_ + chc;
     ra_  := 1 / (facl * ctc_);
-    top_ := (chr_ * tr + chc * ta) / ctc_;
+    top_ := (chr_ * tr + chc * ta) / ctc_;  //ASHRAE eqn 8
     tcl_ := (ra_ * tsk + rcl * top_) / (ra_ + rcl);
       if abs(tcl_ - tcl_old) > .01 then
         tcl_old := tcl_;
@@ -113,7 +115,7 @@ function tcl_calculate //calculate tcl, chr, ctc, top & ra iteratively
         finished := 1;
       end if;
   end while;
-  //print("tcl_ = " + String(tcl));
+  //print("tcl_ = " + String(tcl)); //debug
 end tcl_calculate;
 
 function fnp //make negative part of signals = 0
@@ -142,7 +144,10 @@ equation
   //sine  
   //ta = -1*(2*Modelica.Math.cos((2*Modelica.Constants.pi*time/(3600*24))) + 15)+36;
   
-  tr = ta; ///find a better formula for tr
+  tr = ta; //this is an assumption but it is very close. Experimental data from 
+  //DOI 10.1007/s00484-010-0375-4 shows that tr is within 1% of ta on average.
+  //From ASHRAE: h_r is nearly constant for typical indoor temperatures,
+  //therefore ASHRAE eqn 35 can be used to calculate radiant temperature if you wanted to.  
 
   if clo <= 0 then
     wcrit = 0.38 * vel ^(-0.29);
@@ -192,7 +197,8 @@ equation
     skbf = skbf_;
   end if;
 
-  regsw = csw * warmb * exp(warms / 10.7); //MAKE SURE THE MAX WORKS
+  regsw = min(500,(csw * warmb * exp(warms / 10.7)));
+
 
   rea = 1 / (lr * facl * chc);
   recl = rcl / (lr * icl);
