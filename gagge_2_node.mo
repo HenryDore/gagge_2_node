@@ -12,8 +12,6 @@ model gagge_2_node
   constant Real tbn = 36.8 "setpoint value for mean body temperature (.1*tskn + .9*tcrn), °C";
   constant Real skbfn = 6.3 "neutral value for skin blood flow";
   constant Real sbc = 5.6697 * 10 ^ (-08) "stephan-Boltzmann constant";
-  //Mosteller and Dubois surface area are largely the same, but the majority use Dubois 
-  //constant Real sa = ((ht * wt) / 3600 ) ^ .5 "Mosteller surface area, m^2";
   constant Real sa = 0.203 * (ht/100)^(0.725) * wt^(0.425) "Dubois surface Area, m^2";
   constant Real w = wme * 58.2 "external work, w/m^2";
   constant Real atm = pb / 760 "atmospheric pressure, atm";
@@ -26,7 +24,10 @@ model gagge_2_node
   constant Real cdil = 120 "driving coefficient for vasodilation, 1";
   constant Real cstr = 0.5 "driving coefficient for vasoconstriction, 1";  
   constant Real lr = 2.2 / atm "Lewis Relation is 2.2 at sea level";
-  constant Real rmm = 58.2  "metabolic rate, W";
+  constant Real rmm = met * 58.2  "basic metabolic rate, W";
+  constant Real chc = 3 * atm ^ (0.53) "coductive heat transfer coefficient";
+  constant Real chcv = 8.600001 * (vel * atm) ^ 0.53 "convective heat transfer coefficient";
+  constant Real rea = 1 / (lr * facl * chc) "resistance of air layer to dry heat transfer, °C m^2 / W";
 
   parameter Real set_temp = 25 "setpoint for ambient temperature";
 
@@ -45,8 +46,6 @@ model gagge_2_node
   Real esk (start = 0.1 * met) "total evaporative heat loss from the skin W";
   Real wcrit "evaporative efficiency, 1";
   Real icl "";
-  Real chc (start = 3 * atm ^ (0.53)) "coductive heat transfer coefficient";
-  Real chcv (start = 8.600001 * (vel * atm) ^ 0.53) "convective heat transfer coefficient";
   Real chr (start = 4.7) "radiative heat transfer coefficient";
   Real ctc (start = 4.7 + (3 * atm ^ (0.53))) "?combined convection & radiation coefficient";
   Real ra (start = 1 / (facl * 4.7 + (3 * atm ^ (0.53)))) "resistance of air layer to dry heat transfer, °C m^2 / W";
@@ -57,23 +56,15 @@ model gagge_2_node
   Real cres "heat loss through respiratory convection, W";
   Real scr "rate of energy storage in the core, W";
   Real ssk "rate of enery storage in the skin, ";
-  Real tcsk "alpha*wt*Cb";
-  Real tccr "(1-alpha)*wt*Cb";
-  Real deltatsk (start = 0) "rate of change of skin temperature, °C" ;
-  Real deltatcr (start = 0) "rate of change of core temperature, °C";
-  Real sksig "skin signal ,1";
   Real warms "skin warm signal ,1";
   Real colds "skin cold signal ,1";
-  Real crsig "core signal ,1";
   Real warmc "core warm signal ,1";
   Real coldc "core cold signal ,1";
-  Real bdsig "blood signal ,1";
   Real warmb "blood warm signal ,1";
   Real coldb "blood cold signal ,1";
   Real regsw "regulatory sweating, g/m^2 hr";
   Real ersw "heat loss through sweating, W";
   Real ersw_"also heat loss through sweating, W";
-  Real rea "resistance of air layer to dry heat transfer, °C m^2 / W";
   Real recl "resistance of clothing layer to dry heat transfer, °C m^2 / W";
   Real emax "maximum evapourative capacity, W";
   Real pwet "skin wettedness, 1";
@@ -95,12 +86,10 @@ function tcl_calculate //calculate tcl, chr, ctc, top & ra iteratively
   output Real ctc_;
   output Real top_;  
   output Real ra_;
-
   protected
   Real tcl_old;
   Integer finished;
-    
-  algorithm
+      algorithm
     tcl_old := tcl;
     finished := 0;
     while finished == 0 loop
@@ -129,13 +118,6 @@ function fnp //make negative part of signals = 0
     end if;
 end fnp;
 
-function fnsvp //find saturated vapour pressure
-  input Real temperature;
-  output Real svp;
-  algorithm
-  svp := exp(18.6686 - 4030.183 / (temperature + 235));
-end fnsvp;
-
 equation
   //constant
   ta = set_temp;
@@ -144,11 +126,10 @@ equation
   //sine  
   //ta = -1*(2*Modelica.Math.cos((2*Modelica.Constants.pi*time/(3600*24))) + 15)+36;
   
-  tr = ta; //this is an assumption but it is very close. Experimental data from 
+  //assume tr = ta. This is an assumption but experimental data from 
   //DOI 10.1007/s00484-010-0375-4 shows that tr is within 1% of ta on average.
-  //From ASHRAE: h_r is nearly constant for typical indoor temperatures,
-  //therefore ASHRAE eqn 35 can be used to calculate radiant temperature if you wanted to.  
-
+  tr = ta; //this is an assumption but it is very close. Experimental data from 
+  
   if clo <= 0 then
     wcrit = 0.38 * vel ^(-0.29);
     icl = 1;
@@ -156,38 +137,31 @@ equation
     wcrit = 0.59 * vel ^(-0.08);
     icl   = 0.45;
   end if;
-  
+  //resistance of clothing layer to dry heat transfer
+  recl = rcl / (lr * icl);
+  //calculate tcl (∴ chr,ctc,top&ra) iteratively
   (tcl,chr,ctc,top,ra) = tcl_calculate(tcl,tr,chc,facl,ta,tsk,ctc,rcl);
-
+  //partial vapour pressure of water for ta
+  pa = rh * exp(18.6686 - (4030.183/(ta + 235))) / 100;
+  //heat balance
   dry = (tsk - top) / (ra+rcl);
   hfcs = (tcr - tsk) * (5.28 + 1.163 * skbf);
   eres = 0.0023 * m * (44 - pa);
   cres = 0.0014 * m * (34 - ta);
   scr  = m - hfcs - eres - cres - w; //wm and w in w/2
   ssk  = hfcs - dry - esk;
-  tcsk = 0.97 * alpha * wt;
-  tccr = 0.97 * (1 - alpha) * wt;
-  deltatsk = (ssk * sa) / tcsk / 3600; //°C / s
-  deltatcr = (scr * sa) / tccr / 3600; //°C / s
-  der(tsk) = deltatsk;
-  der(tcr) = deltatcr;
-  
+  der(tsk) = (ssk * sa) / (0.97 * alpha * wt) / 3600; //°C / s
+  der(tcr) = (scr * sa) / (0.97 * (1 - alpha) * wt) / 3600;
+  //mean body temperature  
   tb  = alpha * tsk + (1 - alpha) * tcr;
-
-  chcv = 8.600001 * (vel * atm) ^ 0.53;
-  chc = 3 * atm  ^ 0.53;
-  pa = rh * exp(18.6686 - (4030.183/(ta + 235))) / 100;
- 
-  sksig = tsk - tskn;
-  crsig = tcr - tcrn;
-  bdsig = tb - tbn;
-  warms = fnp(sksig);
-  colds = fnp(-sksig);
-  warmc = fnp(crsig);
-  coldc = fnp(-crsig);
-  warmb = fnp(bdsig);
-  coldb = fnp(-bdsig);
-
+  //thermoregulatory signals 
+  warms = fnp(tsk - tskn);   //sksig
+  colds = fnp(- tsk - tskn); //-sksig
+  warmc = fnp(tcr - tcrn);   //crsig
+  coldc = fnp(- tcr - tcrn); //-crsig
+  warmb = fnp(tb - tbn);     //bdsig
+  coldb = fnp(- tb - tbn);   //-bdsig
+  //skin blood flow
   skbf_ = (skbfn + cdil * warmc) / (1 + cstr * colds); ///SKBF is in the wrong units as always PLS FIX
   if skbf_ > 90 then 
     skbf = 90;
@@ -196,38 +170,38 @@ equation
   else
     skbf = skbf_;
   end if;
-
-  regsw = min(500,(csw * warmb * exp(warms / 10.7)));
-
-
-  rea = 1 / (lr * facl * chc);
-  recl = rcl / (lr * icl);
-
-  esk = esk_;
+  //regulatory sweating
+  regsw = min(500,(csw * warmb * exp(warms / 10.7))); //is CSW correct?
+  //skin wettedness conditions
   emax = (exp(18.6686 - 4030.183 / (tsk + 235)) - pa) / (rea + recl);
-  ersw_ = .68 * regsw;
+  esk = esk_;
+  ersw_ = 0.68 * regsw;
   if (0.06+0.94 * ersw_ / emax) > wcrit then
+    //error
     pwet = wcrit;
     prsw = wcrit / 0.94;
     ersw = prsw * emax;
     edif = 0.06 * (1-prsw)*emax;
     esk_ = ersw + edif;
   elseif emax <= 0 then
+    //error skin wettedness too high
     pwet = wcrit;
     prsw = wcrit;
     ersw = 0;
     edif = 0;
     esk_ = emax;
   else
+    //regulatory sweating
     pwet = 0.06 + 0.94 * prsw;
     prsw = ersw / emax;
     ersw = 0.68 * regsw;
     edif = pwet * emax - ersw;
     esk_ = ersw + edif;
   end if;
-  
+  //shivering
   mshiv = 19.4 * colds * coldc;
   m = rmm + mshiv;
+  //update alpaha from skbf
   alpha =  0.0417737 + 0.7451833 / (skbf + 0.585417);
 
 end gagge_2_node;
