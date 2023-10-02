@@ -15,7 +15,7 @@ model gagge_2_node
   constant Real wt = 70 "weight, kg";
   constant Real tskn = 33.7 "setpoint value for skin temperature, °C";
   constant Real tcrn = 36.8 "setpoint value for core temperature, °C";
-  constant Real tbn = 36.8 "setpoint value for blood temperature (.1*tskn + .9*tcrn), °C";
+  constant Real tbn = 36.49 "setpoint value for blood temperature (.1*tskn + .9*tcrn), °C";
   constant Real skbfn = 6.3 "neutral value for skin blood flow";
   constant Real sbc = 5.6697 * 10 ^ (-08) "stephan-Boltzmann constant";
   constant Real sa = ((ht * wt) / 3600 ) ^ .5 "surface Area (m2) according to mosteller formula";
