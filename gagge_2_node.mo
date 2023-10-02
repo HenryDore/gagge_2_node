@@ -122,9 +122,9 @@ equation
   //constant
   //ta = set_temp;
   //step
-  if time < 7200 then ta = 22.5; else ta = 15; end if; 
+  //if time < 7200 then ta = 22.5; else ta = 15; end if; 
   //sine  
-  //ta = -1*(2*Modelica.Math.cos((2*Modelica.Constants.pi*time/(3600*24))) + 15)+40;
+  ta = -1*(2*Modelica.Math.cos((2*Modelica.Constants.pi*time/(3600*24))) + 15)+40;
   
   //assume tr = ta. This is an assumption but experimental data from 
   //DOI 10.1007/s00484-010-0375-4 shows that tr is within 1% of ta on average.
