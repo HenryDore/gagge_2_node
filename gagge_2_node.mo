@@ -29,7 +29,7 @@ model gagge_2_node
   constant Real chcv = 8.600001 * (vel * atm) ^ 0.53 "convective heat transfer coefficient";
   constant Real rea = 1 / (lr * facl * chc) "resistance of air layer to dry heat transfer, °C m^2 / W";
 
-  parameter Real set_temp = 25 "setpoint for ambient temperature";
+  parameter Real set_temp = 22.5 "setpoint for ambient temperature";
 
   Real m (start = met * 58.2) "metabolic rate, W";
   Real ta (start = 20) "air temperature, °C"; 
@@ -120,11 +120,11 @@ end fnp;
 
 equation
   //constant
-  ta = set_temp;
+  //ta = set_temp;
   //step
-  //if time < 7200 then ta = 20; else ta = 15; end if; 
+  if time < 7200 then ta = 22.5; else ta = 15; end if; 
   //sine  
-  //ta = -1*(2*Modelica.Math.cos((2*Modelica.Constants.pi*time/(3600*24))) + 15)+36;
+  //ta = -1*(2*Modelica.Math.cos((2*Modelica.Constants.pi*time/(3600*24))) + 15)+40;
   
   //assume tr = ta. This is an assumption but experimental data from 
   //DOI 10.1007/s00484-010-0375-4 shows that tr is within 1% of ta on average.
@@ -156,11 +156,11 @@ equation
   tb  = alpha * tsk + (1 - alpha) * tcr;
   //thermoregulatory signals 
   warms = fnp(tsk - tskn);   //sksig
-  colds = fnp(- tsk - tskn); //-sksig
+  colds = fnp(-(tsk - tskn)); //-sksig
   warmc = fnp(tcr - tcrn);   //crsig
-  coldc = fnp(- tcr - tcrn); //-crsig
+  coldc = fnp(-(tcr - tcrn)); //-crsig
   warmb = fnp(tb - tbn);     //bdsig
-  coldb = fnp(- tb - tbn);   //-bdsig
+  coldb = fnp(-(tb - tbn));   //-bdsig
   //skin blood flow
   skbf_ = (skbfn + cdil * warmc) / (1 + cstr * colds); ///SKBF is in the wrong units as always PLS FIX
   if skbf_ > 90 then 
