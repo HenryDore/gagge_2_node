@@ -445,7 +445,11 @@ L_b = (rmm - w) - 3.05E-3*(5733 - 6.99*(rmm - w) - pa) - 0.42*((rmm - w) - 58.15
   E_gen_cr = V_w_core*rho_w*(c_pw*((tcr+273.15) - eqAirTemp.TDryBul - eqAirTemp.TDryBul*Modelica.Math.log((tcr+273.15)/eqAirTemp.TDryBul)) + (Modelica.Constants.R*eqAirTemp.TDryBul/m_w)*Modelica.Math.log(p_vs_To/p_vo)); //"warm and wet exergies of the liquid water generated in the core by metabolism"
 
 //WHY IS THIS ZERO?
-  V_w_shell_rho = (w*(emax/sa))/(2450*1000) "2450 J/g, latent heat value of evaporation of liquid water at 30 degC";
+
+// add me
+//  w_1 = (3.05E-3*(5733 - 6.99*(M_1 - W_1) - p_vr) + 0.42*((M_1 - W_1) - 58.15))/E_max_1;
+
+  V_w_shell_rho = (w_1*(emax/sa))/(2450*1000) "2450 J/g, latent heat value of evaporation of liquid water at 30 degC";
   
   E_gen_sh = V_w_shell_rho*(c_pw*((tsk+273.15)- eqAirTemp.TDryBul - eqAirTemp.TDryBul*Modelica.Math.log((tsk+273.15)/eqAirTemp.TDryBul)) + (Modelica.Constants.R*eqAirTemp.TDryBul/m_w)*(Modelica.Math.log(p_vs_To/p_vo) + ((pAir_in - p_vr)/p_vr)*Modelica.Math.log((pAir_in - p_vr)/(pAir_in - p_vo)))); //E_gen_sh "warm/cool and wet/dry exergies of the sum of liquid water generated in the shell by metabolism and dry air to let the liquid water disperse"
   
