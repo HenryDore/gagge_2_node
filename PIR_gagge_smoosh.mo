@@ -18,7 +18,7 @@ model PIR_gagge_smoosh
   //Outdoor
   Modelica.Blocks.Sources.Constant pAir(k = 101325);
   //CHANGE FOR Judas IF AT HOME, hdore IF AT WORK!
-  Buildings.BoundaryConditions.WeatherData.ReaderTMY3 weaDat(calTSky = Buildings.BoundaryConditions.Types.SkyTemperatureCalculation.HorizontalRadiation, computeWetBulbTemperature = true, filNam = Modelica.Utilities.Files.loadResource("C:/Users/Judas/Box/Human Thermal Comfort/Code/WeatherFile_Gatwick-year.txt"), relHumSou = Buildings.BoundaryConditions.Types.DataSource.File) "Weather data reader" annotation(
+  Buildings.BoundaryConditions.WeatherData.ReaderTMY3 weaDat(calTSky = Buildings.BoundaryConditions.Types.SkyTemperatureCalculation.HorizontalRadiation, computeWetBulbTemperature = true, filNam = Modelica.Utilities.Files.loadResource("C:/Users/hdore/Box/Human Thermal Comfort/Code/WeatherFile_Gatwick-year.txt"), relHumSou = Buildings.BoundaryConditions.Types.DataSource.File) "Weather data reader" annotation(
     Placement(visible = true, transformation(origin = {6, 22}, extent = {{-98, 52}, {-78, 72}}, rotation = 0)));
   //filNam = Modelica.Utilities.Files.loadResource("C:/Program Files/OpenModelica1.21.0-64bit/Buildings 9.1.0/Resources/weatherdata/WeatherFile_Gatwick-1day_29April.txt")) "Weather data reader" annotation(Placement(transformation(extent = {{-98, 52}, {-78, 72}})));
   //______________________________________________________________________________________________________________________________________
@@ -52,7 +52,7 @@ model PIR_gagge_smoosh
   Buildings.ThermalZones.ReducedOrder.SolarGain.CorrectionGDoublePane corGDouPan(n = 2, UWin = 2.7) "Correction factor for solar transmission. n is the vector size for input and output and UWin is thermal transmission coefficient of whole window (https://www.bipv.ch/index.php/en/technology-top-en/thermal-aspects/heat-transfer-coefficient#:~:text=Typical%20values%20vary%20between%206W,double%20glazed%20low%20emission%20window.)" annotation(
     Placement(visible = true, transformation(origin = {-32, 52}, extent = {{-6, -6}, {6, 6}}, rotation = 0)));
   Buildings.ThermalZones.ReducedOrder.RC.FourElements thermalZoneFourElements(VAir = 3*5*2.4 "air volume of the zone, 3 m by 4 m room, 2.4 m ceiling height", hConExt = 3 "convective coefficient of heat transfer of exterior walls (indoor), from Awbi (1998)", hConWin = 3 "convective coefficient of heat transfer of windows(indoor), from Wallentén", gWin = 0.78 "total energy transmittance of windows, from https://www.internorm.solutions/index.php/glossary-of-terms-g-value/", ratioWinConRad = 0.1 "ratio for windows between convective and radiative heat emission", nExt = 1 "number of RC elements of exterior walls (min=1)", RExt = {0.004} "https://www.engineeringtoolbox.com/heat-loss-transmission-d_748.html) vector of resistances of exterior walls, from inside to outside", CExt = {1360000} "vector of heat capacities of exterior walls, from inside to outside, calculated using density, thickness, and specific heat capacity of brick wall, from https://www.greenspec.co.uk/building-design/thermal-mass/", hRad = 5 "coefficient of heat transfer for linearised radiation exchange between walls", AInt = 2*(3*2.4 + 5*2.4) - 2*2 "area of interior walls, excluding floor, roof, and window", hConInt = 3 "convective coefficient of heat transfer of interior walls", nInt = 1 "number of RC elements of interior walls (min=1)", RInt = {0.000668895639141} "unchecked value - vector of resistances of interior walls from port to centre", CInt = {12391363.86} "unchecked value - vector of heat capacities of interior walls, from port to centre", RWin = 0.01642857143 "resistor for windows", RExtRem = 0.1265217391 "unchecked value - resistance of remaining resistor RExtRem between capacity n and outside", AFloor = 15 "area of floor plate", hConFloor = 4 "convective coefficient of heat transfer of floor, from Awbi (1998)", nFloor = 1 "number of RC elements of floor plate (min=1)", RFloor = {0.00331421908725} "vector of resistances of floor plate, from inside to outside", RFloorRem = 0.1265217391 "unchecked value - resistance of remaining resistor between capacity n and outside", CFloor = {1674000} "vector of heat capacities of floor plate, from inside to outside, carpet + concrete floor, from https://help.iesve.com/ve2021/table_6_thermal_conductivity__specific_heat_capacity_and_density.htm and https://www.mrsphysics.co.uk/bge/wp-content/uploads/2016/07/thermal-properties-of-building-materials.pdf", ARoof = 15 "area of roof plate", hConRoof = 0.5 "vector of resistances of roof plate, from inside to outside, from Awbi (1998)", nRoof = 1 "number of RC elements of roof plate (min=1)", RRoof = {0.00331421908725} "vector of resistances of roof plate, from inside to outside", RRoofRem = 0.1265217391 "unchecked value - resistance of remaining resistor between capacity n and outside", CRoof = {1520000} "vector of heat capacities of roof plate, from inside to outside, from https://www.mrsphysics.co.uk/bge/wp-content/uploads/2016/07/thermal-properties-of-building-materials.pdf", nOrientations = 2 "number of orientations (min=1)", AWin = {2, 2} "vector of areas of windows by orientations", ATransparent = {2, 2} "vector of areas of transparent (solar radiation transmitted) elements by orientations", AExt = {3*2.4, 5*2.4} "vector of areas of exterior walls by orientations", redeclare replaceable package Medium = Modelica.Media.Air.SimpleAir, energyDynamics = Modelica.Fluid.Types.Dynamics.FixedInitial, extWallRC(thermCapExt(each der_T(fixed = true))), intWallRC(thermCapInt(each der_T(fixed = true))), floorRC(thermCapExt(each der_T(fixed = true))), T_start = 295.15, roofRC(thermCapExt(each der_T(fixed = true)))) "Thermal zone" annotation(
-    Placement(visible = true, transformation(origin = {0, 6}, extent = {{44, -2}, {92, 34}}, rotation = 0)));
+    Placement(visible = true, transformation(origin = {75.7299, 29.9102}, extent = {{-11.8701, -12.4898}, {11.8701, 12.4898}}, rotation = 0)));
   Buildings.ThermalZones.ReducedOrder.EquivalentAirTemperature.VDI6007WithWindow eqAirTemp(n = 2, wfGro = 0 "weight factor of the ground (0, if not considered)", wfWall = {0.3043478260869566, 0.6956521739130435} "weight factor of the walls", wfWin = {0.5, 0.5} "weight factor of windows", withLongwave = true, aExt = 0.65 "coefficient of absorption of exterior walls (outdoor)", hConWallOut = 24 "exterior walls convective coefficient of heat transfer (outdoor), from Chávez-Galán (2014)", hRad = 5 "coefficient of heat transfer for linearised radiation", hConWinOut = 24 "window convective coefficient of heat transfer (outdoor), same as external wall", TGro = 285.15 "temperature of ground in contact with floor plate") "Computes equivalent air temperature" annotation(
     Placement(visible = true, transformation(origin = {-36, -2}, extent = {{-6, -6}, {6, 6}}, rotation = 0)));
   Modelica.Blocks.Math.Add solRad[2] "Sums up solar radiation of both directions" annotation(
@@ -196,7 +196,9 @@ model PIR_gagge_smoosh
   Real energy(unit = "kWh");
   Real price(unit = "£") "assuming £0.34 as average price for kWh in the UK";
   //______________________________________________________________________________________________________________________________________
-  //gagge_2_node
+  //╔════════════╦═════════════════════╗
+  //║gagge_2_node║Declarations         ║
+  //╚════════════╩═════════════════════╝
   constant Real clo = 0.5 "clothing insulation level, clo";
   constant Real met = 1 "metabolic rate, met";
   constant Real wme = 0 "external work, met";
@@ -265,7 +267,10 @@ model PIR_gagge_smoosh
   Real prsw "ratio of actual heat loss due to sweating to maximum heat loss due to sweating";
   Real edif "heat loss due to diffusion of water fvapout rhough the skin";
   Real esk_ "also total evaporative heat loss from the skin W";
-
+  Real PMV "predicted mean vote";
+  Real PPD "predicted percentage dissatisfied";
+  Real L_b "thermal load of body";
+  
   function tcl_calculate
     //calculate tcl, chr, ctc, top & ra iteratively
     input Real tcl;
@@ -315,8 +320,9 @@ model PIR_gagge_smoosh
       y := x;
     end if;
   end fnp;
-
-  //gagge_2_node
+  //╔════════════╦═════════════════════╗
+  //║gagge_2_node║End of declarations  ║
+  //╚════════════╩═════════════════════╝
 protected
   Modelica.Blocks.Interfaces.RealInput vAir_in_internal "Needed to connect to conditional connector";
   Modelica.Blocks.Interfaces.RealInput M_in_internal(final quantity = "HeatFlux", final unit = "W/m2") "Needed to connect to conditional connector";
@@ -327,27 +333,15 @@ initial equation
   assert(W_1 <= 0, "Parameter W must be equal to zero or negative.");
 //______________________________________________________________________________________________________________________________________
 equation
-//gagge_2_node
-//constant
-//ta = set_temp;
-//step
-//if time < 7200 then ta = 22.5; else ta = 15; end if;
-//sine
-//ta = -1*(2*Modelica.Math.cos((2*Modelica.Constants.pi*time/(3600*24))) + 15) + 40;
-//assume tr = ta. This is an assumption but experimental data from
-//DOI 10.1007/s00484-010-0375-4 shows that tr is within 1% of ta on average.
-//connector - input
+  //╔════════════╦═════════════════════╗
+  //║gagge_2_node║Equations            ║
+  //╚════════════╩═════════════════════╝
+  ta = thermalZoneFourElements.TAir-273.15; //ambient temperature
+  tr = thermalZoneFourElements.TRad-273.15; //mean radiant temperature
 
-  ta = thermalZoneFourElements.TAir-273.15;
-  tr = ta;
-//this is an assumption but it is very close. Experimental data from
-  if clo <= 0 then
-    wcrit = 0.38*vel^(-0.29);
-    icl = 1;
-  else
-    wcrit = 0.59*vel^(-0.08);
-    icl = 0.45;
-  end if;
+  icl = 0.25*Modelica.Math.cos((2*Modelica.Constants.pi*time/(3600*24*365))) + 0.75;
+  wcrit = 0.59*vel^(-0.08);
+
 //resistance of clothing layer to dry heat transfer
   recl = rcl/(lr*icl);
 //calculate tcl (∴ chr,ctc,top&ra) iteratively
@@ -424,8 +418,16 @@ equation
   m = rmm + mshiv;
 //update alpaha from skbf
   alpha_ = 0.0417737 + 0.7451833/(skbf + 0.585417);
-//output connectors
-//gagge_2_node
+  
+//calculate PMV/PPD
+
+L_b = (m - w) - 3.05E-3*(5733 - 6.99*(m - w) - pa) - 0.42*((m - w) - 58.15) - 1.7E-5*m*(5867 - (pa+273.15)) - 0.0014*m*(307.15 - thermalZoneFourElements.TAir) - 3.96E-8*facl*((tcl+273.15)^4 - thermalZoneFourElements.TRad^4) - facl*chc*((tcl+273.15) - thermalZoneFourElements.TAir);
+  PMV = (0.303*Modelica.Math.exp(-0.036*m) + 0.028)*L_b;
+  PPD = 1 - 0.95*Modelica.Math.exp(-(0.03353*PMV^4 + 0.2179*PMV^2));
+
+  //╔════════════╦═════════════════════╗
+  //║gagge_2_node║End of equations     ║
+  //╚════════════╩═════════════════════╝
 //Common calculations
   phi = 0.05*Modelica.Math.cos((0.4 + 2*Modelica.Constants.pi*time/(3600*24*365))) + 0.8;
 // phi = 0.8;
@@ -618,7 +620,7 @@ equation
   end if;
 //Connectors
   connect(thermalZoneFourElements.TAir, conHeaCoo.u_m) annotation(
-    Line(points = {{93, 38}, {100, 38}, {100, -54.4}, {20, -54.4}, {20, -43}}, color = {0, 0, 127}));
+    Line(points = {{105, 50}, {105, -54.4}, {20, -54.4}, {20, -43}}, color = {0, 0, 127}));
   connect(conHeaCoo.y, gainHeaCoo.u) annotation(
     Line(points = {{26.6, -36}, {32.6, -36}}, color = {0, 0, 127}));
   connect(gainHeaCoo.y, heaCoo.Q_flow) annotation(
@@ -626,7 +628,7 @@ equation
   connect(heaCoo.port, heatFlowSensor.port_b) annotation(
     Line(points = {{64, -36}, {72, -36}}, color = {191, 0, 0}));
   connect(heatFlowSensor.port_a, thermalZoneFourElements.intGainsConv) annotation(
-    Line(points = {{84, -36}, {96, -36}, {96, 26}, {92, 26}}, color = {191, 0, 0}));
+    Line(points = {{84, -36}, {96, -36}, {96, 35}, {104, 35}}, color = {191, 0, 0}));
   connect(HDirTil.inc, corGDouPan.inc) annotation(
     Line(points = {{-53, 44}, {-46, 44}, {-46, 48}, {-39, 48}}, color = {0, 0, 127}, thickness = 0.5));
   connect(eqAirTemp.TEqAirWin, preTem1.T) annotation(
@@ -660,13 +662,13 @@ equation
   connect(weaDat.weaBus, HDirTil[2].weaBus) annotation(
     Line(points = {{-72, 84}, {-72, 65}, {-66, 65}, {-66, 46}}, color = {255, 204, 51}, thickness = 0.5));
   connect(perRad.port, thermalZoneFourElements.intGainsRad) annotation(
-    Line(points = {{68, -63}, {100, -63}, {100, 30}, {92, 30}}, color = {191, 0, 0}));
+    Line(points = {{68, -63}, {100, -63}, {100, 40}, {104, 40}}, color = {191, 0, 0}));
   connect(theConWin.solid, thermalZoneFourElements.window) annotation(
-    Line(points = {{36, 29}, {40, 29}, {40, 26}, {44, 26}}, color = {191, 0, 0}));
+    Line(points = {{36, 29}, {47, 29}, {47, 35}}, color = {191, 0, 0}));
   connect(preTem1.port, theConWin.fluid) annotation(
     Line(points = {{10, 32}, {26, 32}, {26, 29}}, color = {191, 0, 0}));
   connect(thermalZoneFourElements.extWall, theConWall.solid) annotation(
-    Line(points = {{44, 18}, {40, 18}, {40, -25}, {-54, -25}}, color = {191, 0, 0}));
+    Line(points = {{47, 25}, {47, -25}, {-54, -25}}, color = {191, 0, 0}));
   connect(theConWall.fluid, preTem.port) annotation(
     Line(points = {{-64, -25}, {-64, -30.5}, {-76, -30.5}, {-76, -46}}, color = {191, 0, 0}));
   connect(hConWall.y, theConWall.Gc) annotation(
@@ -676,17 +678,17 @@ equation
   connect(weaBus.TBlaSky, eqAirTemp.TBlaSky) annotation(
     Line(points = {{-81, 17}, {-58, 17}, {-58, -2}, {-43, -2}}, color = {255, 204, 51}, thickness = 0.5));
   connect(macConv.port, thermalZoneFourElements.intGainsConv) annotation(
-    Line(points = {{68, -91}, {96, -91}, {96, 26}, {92, 26}}, color = {191, 0, 0}));
+    Line(points = {{68, -91}, {96, -91}, {96, 35}, {104, 35}}, color = {191, 0, 0}));
   connect(perCon.port, thermalZoneFourElements.intGainsConv) annotation(
-    Line(points = {{68, -77}, {96, -77}, {96, 26}, {92, 26}}, color = {191, 0, 0}));
+    Line(points = {{68, -77}, {96, -77}, {96, 35}, {104, 35}}, color = {191, 0, 0}));
   connect(preTemFloor.port, thermalZoneFourElements.floor) annotation(
-    Line(points = {{67, -2}, {67, -4}, {68, -4}, {68, 4}}, color = {191, 0, 0}));
+    Line(points = {{67, -2}, {67, 7}, {76, 7}}, color = {191, 0, 0}));
   connect(TSoil.y, preTemFloor.T) annotation(
     Line(points = {{84, -16}, {69.4, -16}, {69.4, -15}, {67, -15}}, color = {0, 0, 127}));
   connect(preTemRoof.port, theConRoof.fluid) annotation(
     Line(points = {{17, 76}, {31, 76}, {31, 74}, {45, 74}}, color = {191, 0, 0}));
   connect(theConRoof.solid, thermalZoneFourElements.roof) annotation(
-    Line(points = {{45, 64}, {45, 42}, {67, 42}, {67, 40}}, color = {191, 0, 0}));
+    Line(points = {{45, 64}, {45, 42}, {74, 42}, {74, 52}}, color = {191, 0, 0}));
   connect(eqAirTempVDI.TEqAir, preTemRoof.T) annotation(
     Line(points = {{-17, 84}, {-1, 84}, {-1, 89}, {17, 89}}, color = {0, 0, 127}));
   connect(theConRoof.Gc, hConRoof.y) annotation(
@@ -708,7 +710,7 @@ equation
   connect(setT.y, conHeaCoo.u_s) annotation(
     Line(points = {{6.8, -36}, {12.8, -36}}, color = {0, 0, 127}));
   connect(corGDouPan.solarRadWinTrans, thermalZoneFourElements.solRad) annotation(
-    Line(points = {{-25, 52}, {40, 52}, {40, 37}, {43, 37}}, color = {0, 0, 127}));
+    Line(points = {{-25, 52}, {40, 52}, {40, 49}, {46, 49}}, color = {0, 0, 127}));
   annotation(
     Diagram(coordinateSystem(extent = {{-100, -100}, {100, 100}}), graphics = {Rectangle(origin = {-85, 55}, lineColor = {39, 39, 39}, fillColor = {186, 186, 186}, pattern = LinePattern.None, fillPattern = FillPattern.Solid, extent = {{15, -45}, {-15, 45}}), Rectangle(origin = {16, 80}, fillColor = {186, 186, 186}, pattern = LinePattern.None, fillPattern = FillPattern.Solid, extent = {{-60, 18}, {60, -18}}), Rectangle(origin = {-13, 22}, fillColor = {186, 186, 186}, pattern = LinePattern.None, fillPattern = FillPattern.Solid, extent = {{-55, 38}, {55, -38}}), Rectangle(origin = {-70, -54}, fillColor = {186, 186, 186}, pattern = LinePattern.None, fillPattern = FillPattern.Solid, extent = {{-24, 36}, {24, -36}}), Rectangle(origin = {70, -12}, fillColor = {159, 159, 159}, pattern = LinePattern.None, fillPattern = FillPattern.Solid, extent = {{-24, 12}, {24, -12}}), Rectangle(origin = {37, -36}, fillColor = {186, 186, 186}, pattern = LinePattern.None, fillPattern = FillPattern.Solid, extent = {{-51, 10}, {51, -10}}), Rectangle(origin = {36, -73}, fillColor = {186, 186, 186}, pattern = LinePattern.None, fillPattern = FillPattern.Solid, extent = {{-36, 25}, {36, -25}}), Text(origin = {-91, 9}, extent = {{-3, 3}, {3, -3}}, textString = "Outdoor", fontSize = 16), Text(origin = {-85, 13}, extent = {{-7, 5}, {7, -5}}, textString = "Outdoor", textStyle = {TextStyle.Bold}), Text(origin = {-85, 13}, extent = {{-7, 5}, {7, -5}}, textString = "Outdoor", textStyle = {TextStyle.Bold}), Text(origin = {-73, -87}, extent = {{-5, 3}, {5, -3}}, textString = "Walls", textStyle = {TextStyle.Bold}), Text(origin = {39, -50}, extent = {{-19, 12}, {19, -12}}, textString = "Person/room boundary", textStyle = {TextStyle.Bold}), Text(origin = {-13, -12}, extent = {{-7, 4}, {7, -4}}, textString = "Window", textStyle = {TextStyle.Bold}), Text(origin = {79, 43}, extent = {{-5, 3}, {5, -3}}, textString = "Office", textStyle = {TextStyle.Bold, TextStyle.Bold}), Text(origin = {12, 66}, extent = {{-4, 2}, {4, -2}}, textString = "Roof", textStyle = {TextStyle.Bold}), Text(origin = {55, -21}, extent = {{-5, 3}, {5, -3}}, textString = "Floor", textStyle = {TextStyle.Bold}), Text(origin = {-7, -43}, extent = {{-5, 3}, {5, -3}}, textString = "HVAC", textStyle = {TextStyle.Bold})}),
     experiment(StartTime = 0, StopTime = 86400, Tolerance = 1e-06, Interval = 60));
