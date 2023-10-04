@@ -421,7 +421,7 @@ equation
   
 //calculate PMV/PPD
 
-L_b = (m - w) - 3.05E-3*(5733 - 6.99*(m - w) - pa) - 0.42*((m - w) - 58.15) - 1.7E-5*m*(5867 - (pa+273.15)) - 0.0014*m*(307.15 - thermalZoneFourElements.TAir) - 3.96E-8*facl*((tcl+273.15)^4 - thermalZoneFourElements.TRad^4) - facl*chc*((tcl+273.15) - thermalZoneFourElements.TAir);
+L_b = (rmm - w) - 3.05E-3*(5733 - 6.99*(rmm - w) - pa) - 0.42*((rmm - w) - 58.15) - 1.7E-5*rmm*(5867 - (pa+273.15)) - 0.0014*rmm*(307.15 - thermalZoneFourElements.TAir) - 3.96E-8*facl*((tcl+273.15)^4 - thermalZoneFourElements.TRad^4) - facl*chc*((tcl+273.15) - thermalZoneFourElements.TAir);
   PMV = (0.303*Modelica.Math.exp(-0.036*m) + 0.028)*L_b;
   PPD = 1 - 0.95*Modelica.Math.exp(-(0.03353*PMV^4 + 0.2179*PMV^2));
 
