@@ -10,7 +10,11 @@ model PIR_gagge_smoosh
   import Modelica.Units.SI;
   import Modelica.Units.NonSI;
   import Modelica.Constants;
-  //______________________________________________________________________________________________________________________________________
+  //___________________________
+
+constant Integer heating_mode = 2 "0 uncontrolled, 1 controlled, 2 modulated";
+ 
+//__________________________________________________________________________________________________________
   Real mod_day(unit = "s");
   Real mod_week(unit = "s") "week starting on Monday";
   Real mod_winter(unit = "s");
@@ -180,13 +184,12 @@ model PIR_gagge_smoosh
     Placement(visible = true, transformation(origin = {19, -91}, extent = {{-9, -9}, {9, 9}}, rotation = 0)));
   //______________________________________________________________________________________________________________________________________
   //HVAC
+ Real setK_function;
   SI.Temperature setT_function;
   Modelica.Blocks.Sources.RealExpression setT(y = setT_function) annotation(
     Placement(visible = true, transformation(origin = {-2, -36}, extent = {{-8, -8}, {8, 8}}, rotation = 0)));
   Buildings.Controls.Continuous.LimPID conHeaCoo(Ti(displayUnit = "ks") = 1, controllerType = Modelica.Blocks.Types.SimpleController.P, k = 1, yMax = 1, yMin = 0) "Heating and cooling controller" annotation(
     Placement(visible = true, transformation(origin = {20, -36}, extent = {{-6, -6}, {6, 6}}, rotation = 0)));
-  Modelica.Blocks.Math.Gain gainHeaCoo(k = 0) "Gain for heating and cooling controller, numerically equal to Q_flow nominal, in W" annotation(
-    Placement(visible = true, transformation(origin = {38, -36}, extent = {{-4, -4}, {4, 4}}, rotation = 0)));
   Modelica.Thermal.HeatTransfer.Sources.PrescribedHeatFlow heaCoo "Ideal heater/cooler with limit" annotation(
     Placement(visible = true, transformation(origin = {56, -36}, extent = {{-8, -8}, {8, 8}}, rotation = 0)));
   Modelica.Thermal.HeatTransfer.Sensors.HeatFlowSensor heatFlowSensor "Sensor for ideal heater/cooler" annotation(
@@ -200,10 +203,10 @@ model PIR_gagge_smoosh
   //║gagge_2_node║Declarations         ║
   //╚════════════╩═════════════════════╝
   constant Real clo = 0.5 "clothing insulation level, clo";
-  constant Real met = 1 "metabolic rate, met";
+  constant Real met = 1.2 "metabolic rate, met";
   constant Real wme = 0 "external work, met";
   constant Real pb = 760 "barometric pressure, torr or mmHg";
-  constant Real ht = 170 "height, cm";
+  constant Real ht = 175 "height, cm";
   constant Real wt = 70 "weight, kg";
   constant Real tskn = 33.7 "setpoint value for skin temperature, °C";
   constant Real tcrn = 36.8 "setpoint value for core temperature, °C";
@@ -337,9 +340,14 @@ model PIR_gagge_smoosh
       y := x;
     end if;
   end fnp;
+
   //╔════════════╦═════════════════════╗
   //║gagge_2_node║End of declarations  ║
   //╚════════════╩═════════════════════╝
+  Modelica.Blocks.Sources.RealExpression setK(y = setK_function) annotation(
+    Placement(visible = true, transformation(origin = {46, -44}, extent = {{8, -8}, {-8, 8}}, rotation = 0)));
+ gainHeaCoo_variable_k gainHeaCoo_variable_k1 annotation(
+    Placement(visible = true, transformation(origin = {40, -36}, extent = {{-4, -4}, {4, 4}}, rotation = 0)));
 protected
   Modelica.Blocks.Interfaces.RealInput vAir_in_internal "Needed to connect to conditional connector";
   Modelica.Blocks.Interfaces.RealInput M_in_internal(final quantity = "HeatFlux", final unit = "W/m2") "Needed to connect to conditional connector";
@@ -350,15 +358,15 @@ initial equation
   assert(W_1 <= 0, "Parameter W must be equal to zero or negative.");
 //______________________________________________________________________________________________________________________________________
 equation
-  //╔════════════╦═════════════════════╗
-  //║gagge_2_node║Equations            ║
-  //╚════════════╩═════════════════════╝
-  ta = thermalZoneFourElements.TAir-273.15; //ambient temperature
-  tr = thermalZoneFourElements.TRad-273.15; //mean radiant temperature
-
+//╔════════════╦═════════════════════╗
+//║gagge_2_node║Equations            ║
+//╚════════════╩═════════════════════╝
+  ta = thermalZoneFourElements.TAir - 273.15;
+//ambient temperature
+  tr = thermalZoneFourElements.TRad - 273.15;
+//mean radiant temperature
   icl = 0.25*Modelica.Math.cos((2*Modelica.Constants.pi*time/(3600*24*365))) + 0.75;
   wcrit = 0.59*vel^(-0.08);
-
 //resistance of clothing layer to dry heat transfer
   recl = rcl/(lr*icl);
 //calculate tcl (∴ chr,ctc,top&ra) iteratively
@@ -435,59 +443,47 @@ equation
   m = rmm + mshiv;
 //update alpaha from skbf
   alpha_ = 0.0417737 + 0.7451833/(skbf + 0.585417);
-  
 //calculate PMV/PPD
-
-L_b = (rmm - w) - 3.05E-3*(5733 - 6.99*(rmm - w) - pa) - 0.42*((rmm - w) - 58.15) - 1.7E-5*rmm*(5867 - (pa+273.15)) - 0.0014*rmm*(307.15 - thermalZoneFourElements.TAir) - 3.96E-8*facl*((tcl+273.15)^4 - thermalZoneFourElements.TRad^4) - facl*chc*((tcl+273.15) - thermalZoneFourElements.TAir);
-  PMV = (0.303*Modelica.Math.exp(-0.036*m) + 0.028)*L_b;
+  L_b = (rmm - w) - 3.05E-3*(5733 - 6.99*(rmm - w) - pa) - 0.42*((rmm - w) - 58.15) - 1.7E-5*rmm*(5867 - (pa + 273.15)) - 0.0014*rmm*(307.15 - thermalZoneFourElements.TAir) - 3.96E-8*facl*((tcl + 273.15)^4 - thermalZoneFourElements.TRad^4) - facl*chc*((tcl + 273.15) - thermalZoneFourElements.TAir);
+  PMV = (0.303*Modelica.Math.exp(-0.036*rmm) + 0.028)*L_b;
   PPD = 1 - 0.95*Modelica.Math.exp(-(0.03353*PMV^4 + 0.2179*PMV^2));
-
-
 //EXERGY TERMS
 //From "Low energy systems for high performance buildings and communities" Working report of IEA ECBS annex 49
-  E_xm = m*(1 - (eqAirTemp.TDryBul/T_cr_1)); //"warm exergy generated by metabolism"
-  
+  E_xm = m*(1 - (eqAirTemp.TDryBul/T_cr_1));
+//"warm exergy generated by metabolism"
   V_in = 1.2e-6*m;
-  E_inh = V_in*((c_pa*m_a*(pAir_in - p_vr)/(Modelica.Constants.R*thermalZoneFourElements.TAir) + c_pv*m_w*p_vr/(Modelica.Constants.R*thermalZoneFourElements.TAir))*((thermalZoneFourElements.TAir - eqAirTemp.TDryBul) - eqAirTemp.TDryBul*Modelica.Math.log(thermalZoneFourElements.TAir/eqAirTemp.TDryBul)) + (eqAirTemp.TDryBul/thermalZoneFourElements.TAir)*((pAir_in - p_vr)*Modelica.Math.log((pAir_in - p_vr)/(pAir_in - p_vo)) + p_vr*Modelica.Math.log(p_vr/p_vo))); //"warm/cool and wet/dry exergies of the inhaled humid air"
-
-
+  E_inh = V_in*((c_pa*m_a*(pAir_in - p_vr)/(Modelica.Constants.R*thermalZoneFourElements.TAir) + c_pv*m_w*p_vr/(Modelica.Constants.R*thermalZoneFourElements.TAir))*((thermalZoneFourElements.TAir - eqAirTemp.TDryBul) - eqAirTemp.TDryBul*Modelica.Math.log(thermalZoneFourElements.TAir/eqAirTemp.TDryBul)) + (eqAirTemp.TDryBul/thermalZoneFourElements.TAir)*((pAir_in - p_vr)*Modelica.Math.log((pAir_in - p_vr)/(pAir_in - p_vo)) + p_vr*Modelica.Math.log(p_vr/p_vo)));
+//"warm/cool and wet/dry exergies of the inhaled humid air"
   V_w_core = 1.2e-6*m*(0.029 - 0.049e-4*p_vr);
-  E_gen_cr = V_w_core*rho_w*(c_pw*((tcr+273.15) - eqAirTemp.TDryBul - eqAirTemp.TDryBul*Modelica.Math.log((tcr+273.15)/eqAirTemp.TDryBul)) + (Modelica.Constants.R*eqAirTemp.TDryBul/m_w)*Modelica.Math.log(p_vs_To/p_vo)); //"warm and wet exergies of the liquid water generated in the core by metabolism"
-
+  E_gen_cr = V_w_core*rho_w*(c_pw*((tcr + 273.15) - eqAirTemp.TDryBul - eqAirTemp.TDryBul*Modelica.Math.log((tcr + 273.15)/eqAirTemp.TDryBul)) + (Modelica.Constants.R*eqAirTemp.TDryBul/m_w)*Modelica.Math.log(p_vs_To/p_vo));
+//"warm and wet exergies of the liquid water generated in the core by metabolism"
 //WHY IS THIS ZERO?
-
 // add me
-wetted = -(3.05E-3*(5733 - 6.99*(m) - p_vr) + 0.42*(m) - 58.15)/emax; //this is probably wrong
-
+  wetted = -(3.05E-3*(5733 - 6.99*(m) - p_vr) + 0.42*(m) - 58.15)/emax;
+//this is probably wrong
   V_w_shell_rho = (wetted*(emax/sa))/(2450*1000) "2450 J/g, latent heat value of evaporation of liquid water at 30 degC";
-  
-  E_gen_sh = V_w_shell_rho*(c_pw*((tsk+273.15)- eqAirTemp.TDryBul - eqAirTemp.TDryBul*Modelica.Math.log((tsk+273.15)/eqAirTemp.TDryBul)) + (Modelica.Constants.R*eqAirTemp.TDryBul/m_w)*(Modelica.Math.log(p_vs_To/p_vo) + ((pAir_in - p_vr)/p_vr)*Modelica.Math.log((pAir_in - p_vr)/(pAir_in - p_vo)))); // warm/cool and wet/dry exergies of the sum of liquid water generated in the shell by metabolism and dry air to let the liquid water disperse
-  
-E_rad_abs = F_eff*facl*eqAirTemp.aExt*epsilon_cl*H_rb*((eqAirTemp.TEqAir - eqAirTemp.TDryBul)^2)/(eqAirTemp.TEqAir + eqAirTemp.TDryBul); //Warm/cool radiant exergy absorbed by the whole of skin and clothing surfaces
+  E_gen_sh = V_w_shell_rho*(c_pw*((tsk + 273.15) - eqAirTemp.TDryBul - eqAirTemp.TDryBul*Modelica.Math.log((tsk + 273.15)/eqAirTemp.TDryBul)) + (Modelica.Constants.R*eqAirTemp.TDryBul/m_w)*(Modelica.Math.log(p_vs_To/p_vo) + ((pAir_in - p_vr)/p_vr)*Modelica.Math.log((pAir_in - p_vr)/(pAir_in - p_vo))));
+// warm/cool and wet/dry exergies of the sum of liquid water generated in the shell by metabolism and dry air to let the liquid water disperse
+  E_rad_abs = F_eff*facl*eqAirTemp.aExt*epsilon_cl*H_rb*((eqAirTemp.TEqAir - eqAirTemp.TDryBul)^2)/(eqAirTemp.TEqAir + eqAirTemp.TDryBul);
+//Warm/cool radiant exergy absorbed by the whole of skin and clothing surfaces
 //e_stored "warm exergy stored in the core and the shell"
-
-Q_core = (1 - alpha_)*(wt/sa)*C_b;
-E_stored = Q_core*(1 - (eqAirTemp.TDryBul/(tcr+273.15)))*der((tcr+273.15)) + Q_shell_1*(1 - (eqAirTemp.TDryBul/(tsk+273.15)))*der((tsk+273.15));
-
-p_vs_Tcr = Modelica.Math.exp(25.89 - 5319/(tcr+273.15));
-
-E_exh = V_in_1*(((c_pa*m_a/(Modelica.Constants.R*(tcr+273.15)))*(pAir_in - p_vs_Tcr) + (c_pv*m_w/(Modelica.Constants.R*(tcr+273.15)))*p_vs_Tcr)*((tcr+273.15) - eqAirTemp.TDryBul - eqAirTemp.TDryBul*Modelica.Math.log((tcr+273.15)/eqAirTemp.TDryBul)) + (eqAirTemp.TDryBul/(tcr+273.15))*((pAir_in - p_vs_Tcr)*Modelica.Math.log((pAir_in - p_vs_Tcr)/(pAir_in - p_vo)) + (p_vs_Tcr*Modelica.Math.log(p_vs_Tcr/p_vo)))); //"warm and wet exergies of the exhaled humid air"
-
-E_sw = V_w_shell_rho*(c_pv*((tcl+273.15) - eqAirTemp.TDryBul - eqAirTemp.TDryBul*Modelica.Math.log((tcl+273.15)/eqAirTemp.TDryBul)) + (Modelica.Constants.R*eqAirTemp.TDryBul/m_w)*(Modelica.Math.log(p_vr/p_vo) + ((pAir_in - p_vr)/p_vr)*Modelica.Math.log((pAir_in - p_vr)/(pAir_in - p_vo)))); //warm/cool exergy of the water vapour originating from the sweat and wet/dry exergy of the humid air containing the evaporated sweat
-
-E_rad_dis = F_eff*facl*epsilon_cl*H_rb*((tcl+273.15) - eqAirTemp.TDryBul)^2/((tcl+273.15) + eqAirTemp.TDryBul); // warm/cool radiant exergy discharged from the whole of skin and clothing surfaces
-
-E_conv = facl*chc*((tcl+273.15) - thermalZoneFourElements.TAir)*(1 - (eqAirTemp.TDryBul/(tcl+273.15)));
-
+  Q_core = (1 - alpha_)*(wt/sa)*C_b;
+  E_stored = Q_core*(1 - (eqAirTemp.TDryBul/(tcr + 273.15)))*der((tcr + 273.15)) + Q_shell_1*(1 - (eqAirTemp.TDryBul/(tsk + 273.15)))*der((tsk + 273.15));
+  p_vs_Tcr = Modelica.Math.exp(25.89 - 5319/(tcr + 273.15));
+  E_exh = V_in_1*(((c_pa*m_a/(Modelica.Constants.R*(tcr + 273.15)))*(pAir_in - p_vs_Tcr) + (c_pv*m_w/(Modelica.Constants.R*(tcr + 273.15)))*p_vs_Tcr)*((tcr + 273.15) - eqAirTemp.TDryBul - eqAirTemp.TDryBul*Modelica.Math.log((tcr + 273.15)/eqAirTemp.TDryBul)) + (eqAirTemp.TDryBul/(tcr + 273.15))*((pAir_in - p_vs_Tcr)*Modelica.Math.log((pAir_in - p_vs_Tcr)/(pAir_in - p_vo)) + (p_vs_Tcr*Modelica.Math.log(p_vs_Tcr/p_vo))));
+//"warm and wet exergies of the exhaled humid air"
+  E_sw = V_w_shell_rho*(c_pv*((tcl + 273.15) - eqAirTemp.TDryBul - eqAirTemp.TDryBul*Modelica.Math.log((tcl + 273.15)/eqAirTemp.TDryBul)) + (Modelica.Constants.R*eqAirTemp.TDryBul/m_w)*(Modelica.Math.log(p_vr/p_vo) + ((pAir_in - p_vr)/p_vr)*Modelica.Math.log((pAir_in - p_vr)/(pAir_in - p_vo))));
+//warm/cool exergy of the water vapour originating from the sweat and wet/dry exergy of the humid air containing the evaporated sweat
+  E_rad_dis = F_eff*facl*epsilon_cl*H_rb*((tcl + 273.15) - eqAirTemp.TDryBul)^2/((tcl + 273.15) + eqAirTemp.TDryBul);
+// warm/cool radiant exergy discharged from the whole of skin and clothing surfaces
+  E_conv = facl*chc*((tcl + 273.15) - thermalZoneFourElements.TAir)*(1 - (eqAirTemp.TDryBul/(tcl + 273.15)));
 //Complete exergy conservation equation
 //#####################################
-E_cons = E_xm + E_inh + E_gen_cr + E_gen_sh + E_rad_abs - E_stored - E_exh - E_sw - E_rad_dis - E_conv;
+  E_cons = E_xm + E_inh + E_gen_cr + E_gen_sh + E_rad_abs - E_stored - E_exh - E_sw - E_rad_dis - E_conv;
 //#####################################
-
-
-  //╔════════════╦═════════════════════╗
-  //║gagge_2_node║End of equations     ║
-  //╚════════════╩═════════════════════╝
+//╔════════════╦═════════════════════╗
+//║gagge_2_node║End of equations     ║
+//╚════════════╩═════════════════════╝
 //Common calculations
   phi = 0.05*Modelica.Math.cos((0.4 + 2*Modelica.Constants.pi*time/(3600*24*365))) + 0.8;
 // phi = 0.8;
@@ -617,53 +613,67 @@ E_cons = E_xm + E_inh + E_gen_cr + E_gen_sh + E_rad_abs - E_stored - E_exh - E_s
   mod_day = OpenModelica.Internal.realRem(x = time, y = 86400.0);
   mod_week = OpenModelica.Internal.realRem(x = time, y = 604800.0);
   mod_winter = OpenModelica.Internal.realRem(x = time, y = 270*86400.0);
+//heating_mode = 0 "0 uncontrolled, 1 controlled, 2 modulated";
 //constant temperature control during winter (October to April)
-  if mod_winter < 122*86400 then
-    setT_function = 22 + 273.15;
- else
-   setT_function = 273.15;
- end if;
-  
-  
-//Temperature control turned off during evenings and weekends
 //  if mod_winter < 122*86400 then
-//      if mod_week < 432000 then
-//      if mod_day < 21600 then
-//        setT_function = 273.15;
-//      elseif mod_day >= 21600 and mod_day < 64800 then
-//        setT_function = 22+273.15;
-//      else
-//        setT_function = 273.15;
-//      end if;
-//    else
-//      setT_function= 273.15;
-//    end if;
-//  else
-//     setT_function = 273.15;
-//  end if;
-  if gainHeaCoo.y < 0 then
+//    setT_function = 22 + 273.15;
+// else
+//   setT_function = 273.15;
+// end if;
+  if heating_mode == 0 then
+    setT_function = 273.15;
+//irrelephant
+    setK_function = 0;
+  elseif heating_mode == 1 then
+    setK_function = 1000;
+    if mod_winter < 122*86400 then
+      setT_function = 22 + 273.15;
+    else
+      setT_function = 273.15;
+    end if;
+  else
+//modulated
+    setK_function = 1000;
+    if mod_winter < 122*86400 then
+      if mod_week < 432000 then
+        if mod_day < 21600 then
+          setT_function = 273.15;
+        elseif mod_day >= 21600 and mod_day < 64800 then
+          setT_function = 22 + 273.15;
+        else
+          setT_function = 273.15;
+        end if;
+      else
+        setT_function = 273.15;
+      end if;
+    else
+      setT_function = 273.15;
+    end if;
+  end if;
+  
+  
+  if gainHeaCoo_variable_k1.y < 0 then
     eta = 0.1 "cooling";
-  elseif gainHeaCoo.y > 0 then
+  elseif gainHeaCoo_variable_k1.y > 0 then
     eta = 0.9 "heating, boiler";
   else
     eta = 0 "off";
   end if;
+
 // comment out for heating?
 //  if eta == 0 then
 //  power = 0;
 //  else
 //  power = abs(heatFlowSensor.Q_flow/eta);
 //  end if;
-
 // comment out for??
   if mod_day < 21600 then
-   power = 0;
+    power = 0;
   elseif mod_day >= 21600 and mod_day < 64800 and eta > 0 then
     power = abs(heatFlowSensor.Q_flow/eta);
   else
-  power = 0;
+    power = 0;
   end if;
-
   der(energy) = power/(1000*3600) "conversions to have kWh";
   price = energy*0.34;
 //______________________________________________________________________________________________________________________________________
@@ -687,10 +697,6 @@ E_cons = E_xm + E_inh + E_gen_cr + E_gen_sh + E_rad_abs - E_stored - E_exh - E_s
 //Connectors
   connect(thermalZoneFourElements.TAir, conHeaCoo.u_m) annotation(
     Line(points = {{80, 37}, {80, -54.4}, {20, -54.4}, {20, -43}}, color = {0, 0, 127}));
-  connect(conHeaCoo.y, gainHeaCoo.u) annotation(
-    Line(points = {{26.6, -36}, {32.6, -36}}, color = {0, 0, 127}));
-  connect(gainHeaCoo.y, heaCoo.Q_flow) annotation(
-    Line(points = {{42.4, -36}, {48.4, -36}}, color = {0, 0, 127}));
   connect(heaCoo.port, heatFlowSensor.port_b) annotation(
     Line(points = {{64, -36}, {72, -36}}, color = {191, 0, 0}));
   connect(heatFlowSensor.port_a, thermalZoneFourElements.intGainsConv) annotation(
@@ -777,11 +783,17 @@ E_cons = E_xm + E_inh + E_gen_cr + E_gen_sh + E_rad_abs - E_stored - E_exh - E_s
     Line(points = {{6.8, -36}, {12.8, -36}}, color = {0, 0, 127}));
   connect(corGDouPan.solarRadWinTrans, thermalZoneFourElements.solRad) annotation(
     Line(points = {{-25, 52}, {40, 52}, {40, 36}, {55, 36}}, color = {0, 0, 127}));
+  connect(conHeaCoo.y, gainHeaCoo_variable_k1.u) annotation(
+    Line(points = {{26, -36}, {30, -36}, {30, -33}, {35, -33}}, color = {0, 0, 127}));
+ connect(setK.y, gainHeaCoo_variable_k1.k) annotation(
+    Line(points = {{37, -44}, {32, -44}, {32, -40}, {36, -40}}, color = {0, 0, 127}));
+ connect(gainHeaCoo_variable_k1.y, heaCoo.Q_flow) annotation(
+    Line(points = {{44, -36}, {48, -36}}, color = {0, 0, 127}));
   annotation(
     Diagram(coordinateSystem(extent = {{-100, -100}, {100, 100}}), graphics = {Rectangle(origin = {-85, 55}, lineColor = {39, 39, 39}, fillColor = {186, 186, 186}, pattern = LinePattern.None, fillPattern = FillPattern.Solid, extent = {{15, -45}, {-15, 45}}), Rectangle(origin = {16, 80}, fillColor = {186, 186, 186}, pattern = LinePattern.None, fillPattern = FillPattern.Solid, extent = {{-60, 18}, {60, -18}}), Rectangle(origin = {-13, 22}, fillColor = {186, 186, 186}, pattern = LinePattern.None, fillPattern = FillPattern.Solid, extent = {{-55, 38}, {55, -38}}), Rectangle(origin = {-70, -54}, fillColor = {186, 186, 186}, pattern = LinePattern.None, fillPattern = FillPattern.Solid, extent = {{-24, 36}, {24, -36}}), Rectangle(origin = {70, -12}, fillColor = {159, 159, 159}, pattern = LinePattern.None, fillPattern = FillPattern.Solid, extent = {{-24, 12}, {24, -12}}), Rectangle(origin = {37, -36}, fillColor = {186, 186, 186}, pattern = LinePattern.None, fillPattern = FillPattern.Solid, extent = {{-51, 10}, {51, -10}}), Rectangle(origin = {36, -73}, fillColor = {186, 186, 186}, pattern = LinePattern.None, fillPattern = FillPattern.Solid, extent = {{-36, 25}, {36, -25}}), Text(origin = {-91, 9}, extent = {{-3, 3}, {3, -3}}, textString = "Outdoor", fontSize = 16), Text(origin = {-85, 13}, extent = {{-7, 5}, {7, -5}}, textString = "Outdoor", textStyle = {TextStyle.Bold}), Text(origin = {-85, 13}, extent = {{-7, 5}, {7, -5}}, textString = "Outdoor", textStyle = {TextStyle.Bold}), Text(origin = {-73, -87}, extent = {{-5, 3}, {5, -3}}, textString = "Walls", textStyle = {TextStyle.Bold}), Text(origin = {39, -50}, extent = {{-19, 12}, {19, -12}}, textString = "Person/room boundary", textStyle = {TextStyle.Bold}), Text(origin = {-13, -12}, extent = {{-7, 4}, {7, -4}}, textString = "Window", textStyle = {TextStyle.Bold}), Text(origin = {79, 43}, extent = {{-5, 3}, {5, -3}}, textString = "Office", textStyle = {TextStyle.Bold, TextStyle.Bold}), Text(origin = {12, 66}, extent = {{-4, 2}, {4, -2}}, textString = "Roof", textStyle = {TextStyle.Bold}), Text(origin = {55, -21}, extent = {{-5, 3}, {5, -3}}, textString = "Floor", textStyle = {TextStyle.Bold}), Text(origin = {-7, -43}, extent = {{-5, 3}, {5, -3}}, textString = "HVAC", textStyle = {TextStyle.Bold})}),
-
-//day
-//    experiment(StartTime = 0, StopTime = 86400, Tolerance = 1e-06, Interval = 60));
-//year
-    experiment(StartTime = 0, StopTime = 31536000, Tolerance = 1e-06, Interval = 600));
+ //day
+ //    experiment(StartTime = 0, StopTime = 86400, Tolerance = 1e-06, Interval = 60));
+ //year
+    experiment(StartTime = 0, StopTime = 31536000, Tolerance = 1e-06, Interval = 600),
+    uses(Modelica(version = "4.0.0")));
 end PIR_gagge_smoosh;
