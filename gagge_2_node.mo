@@ -1,18 +1,22 @@
 model gagge_2_node
   // 86400 = 1 day in seconds
   // 3600 = 1 hour in seconds
+  import Modelica.Units.SI;
+  import Modelica.Units.NonSI;
+  import Modelica.Constants;
+
   constant Real clo = 0.5 "clothing insulation level, clo";
   constant Real met = 1 "metabolic rate, met";
   constant Real wme = 0 "external work, met";
   constant Real pb = 760 "barometric pressure, torr or mmHg";
   constant Real ht = 170 "height, cm";
-  constant Real wt = 70 "weight, kg";
-  constant Real tskn = 33.7 "setpoint value for skin temperature, °C";
-  constant Real tcrn = 36.8 "setpoint value for core temperature, °C";
-  constant Real tbn = 36.49 "setpoint value for mean body temperature (.1*tskn + .9*tcrn), °C";
+  constant SI.Mass wt = 70 "weight, kg";
+  constant NonSI.Temperature_degC tskn = 33.7 "setpoint value for skin temperature";
+  constant NonSI.Temperature_degC tcrn = 36.8 "setpoint value for core temperature";
+  constant NonSI.Temperature_degC tbn = 36.49 "setpoint value for mean body temperature (.1*tskn + .9*tcrn)";
   constant Real skbfn = 6.3 "neutral value for skin blood flow";
   constant Real sbc = 5.6697*10^(-8) "stephan-Boltzmann constant";
-  constant Real sa = 0.203*(ht/100)^(0.725)*wt^(0.425) "Dubois surface Area, m^2";
+  constant SI.Area sa = 0.203*(ht/100)^(0.725)*wt^(0.425) "Dubois surface Area";
   constant Real w = wme*58.2 "external work, w/m^2";
   constant Real atm = pb/760 "atmospheric pressure, atm";
   constant Real rcl = 0.155*clo "thermal resistance of clothing ensemble, °C m^2/W";
@@ -29,31 +33,31 @@ model gagge_2_node
   constant Real chcv = 8.600001*(vel*atm)^0.53 "convective heat transfer coefficient";
   constant Real rea = 1/(lr*facl*chc) "resistance of air layer to dry heat transfer, °C m^2 / W";
   parameter Real set_temp = 22.5 "setpoint for ambient temperature";
-  Real m(start = met*58.2) "metabolic rate, W";
-  Real ta(start = 20) "air temperature, °C";
-  Real tr(start = 20) "mean radiant temperature, °C";
+  SI.HeatFlux m(start = met*58.2) "metabolic rate";
+  NonSI.Temperature_degC ta(start = 20) "air temperature";
+  NonSI.Temperature_degC tr(start = 20) "mean radiant temperature";
   Real pa "partial vapour pressure of water, mmHg";
-  Real tsk(start = tskn, fixed = true) "skin temperature, °C";
-  Real tcr(start = tcrn, fixed = true) "core temperature, °C";
-  Real tcl(start = tskn) "clothing temperature, °C";
-  Real tb(start = 0.1*tskn + (1 - 0.1)*tcrn) "mean body temperateu,°C";
+  NonSI.Temperature_degC tsk(start = tskn, fixed = true) "skin temperature";
+  NonSI.Temperature_degC tcr(start = tcrn, fixed = true) "core temperature";
+  NonSI.Temperature_degC tcl(start = tskn) "clothing temperature, °C";
+  NonSI.Temperature_degC tb(start = 0.1*tskn + (1 - 0.1)*tcrn) "mean body temperature";
   Real skbf(start = skbfn) "skin blood flow, kg/hr m^2";
   Real skbf_ "skin blood flow test";
-  Real mshiv(start = 0) "rate of energy released by shivering, W";
+  SI.HeatFlux mshiv(start = 0) "rate of energy released by shivering";
   Real alpha(start = 0.1) "fractional skin mass, 1";
-  Real esk(start = 0.1*met) "total evaporative heat loss from the skin W";
+  SI.HeatFlux esk(start = 0.1*met) "total evaporative heat loss from the skin";
   Real wcrit "evaporative efficiency, 1";
   Real icl "";
   Real chr(start = 4.7) "radiative heat transfer coefficient";
   Real ctc(start = 4.7 + (3*atm^(0.53))) "?combined convection & radiation coefficient";
   Real ra(start = 1/(facl*4.7 + (3*atm^(0.53)))) "resistance of air layer to dry heat transfer, °C m^2 / W";
-  Real top(start = ((4.7*20) + (3*atm^(0.53))*20)/4.7 + (3*atm^(0.53))) "operative temperature, °C";
-  Real dry "total sensible heat loss, W";
-  Real hfcs "rate of energy transport between core and skin, W";
-  Real eres "heat loss through respiratory evaporation, W";
-  Real cres "heat loss through respiratory convection, W";
-  Real scr "rate of energy storage in the core, W";
-  Real ssk "rate of enery storage in the skin, ";
+  NonSI.Temperature_degC top(start = ((4.7*20) + (3*atm^(0.53))*20)/4.7 + (3*atm^(0.53))) "operative temperature";
+  SI.HeatFlux dry "total sensible heat loss";
+  SI.HeatFlux hfcs "rate of energy transport between core and skin";
+  SI.HeatFlux eres "heat loss through respiratory evaporation";
+  SI.HeatFlux cres "heat loss through respiratory convection";
+  SI.HeatFlux scr "rate of energy storage in the core";
+  SI.HeatFlux ssk "rate of enery storage in the skin, ";
   Real warms "skin warm signal ,1";
   Real colds "skin cold signal ,1";
   Real warmc "core warm signal ,1";
@@ -61,14 +65,14 @@ model gagge_2_node
   Real warmb "blood warm signal ,1";
   Real coldb "blood cold signal ,1";
   Real regsw "regulatory sweating, g/m^2 hr";
-  Real ersw "heat loss through sweating, W";
-  Real ersw_ "also heat loss through sweating, W";
+  SI.HeatFlux ersw "heat loss through sweating";
+  SI.HeatFlux ersw_ "also heat loss through sweating";
   Real recl "resistance of clothing layer to dry heat transfer, °C m^2 / W";
-  Real emax "maximum evapourative capacity, W";
+  SI.HeatFlux emax "maximum evapourative capacity";
   Real pwet "skin wettedness, 1";
   Real prsw "ratio of actual heat loss due to sweating to maximum heat loss due to sweating";
-  Real edif "heat loss due to diffusion of water fvapout rhough the skin";
-  Real esk_ "also total evaporative heat loss from the skin W";
+  SI.HeatFlux edif "heat loss due to diffusion of water fvapout rhough the skin";
+  SI.HeatFlux esk_ "also total evaporative heat loss from the skin";
 
   function tcl_calculate
     //calculate tcl, chr, ctc, top & ra iteratively
@@ -122,9 +126,9 @@ model gagge_2_node
 
   //connectors
   Modelica.Blocks.Interfaces.RealInput ambient_temperature annotation(
-    Placement(visible = true, transformation(origin = {-60, -40}, extent = {{-20, -20}, {20, 20}}, rotation = 0), iconTransformation(origin = {-80, 0}, extent = {{-20, -20}, {20, 20}}, rotation = 0)));
+    Placement(visible = true, transformation(origin = {-120, 0}, extent = {{-20, -20}, {20, 20}}, rotation = 0), iconTransformation(origin = {-80, 0}, extent = {{-20, -20}, {20, 20}}, rotation = 0)));
   Modelica.Blocks.Interfaces.RealOutput metabolic_rate annotation(
-    Placement(visible = true, transformation(origin = {50, 2}, extent = {{-10, -10}, {10, 10}}, rotation = 0), iconTransformation(origin = {90, 0}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
+    Placement(visible = true, transformation(origin = {110, 0}, extent = {{-10, -10}, {10, 10}}, rotation = 0), iconTransformation(origin = {90, 0}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
 equation
 //constant
 //ta = set_temp;
@@ -135,7 +139,7 @@ equation
 //assume tr = ta. This is an assumption but experimental data from
 //DOI 10.1007/s00484-010-0375-4 shows that tr is within 1% of ta on average.
 //connector - input
-  ta = sine_temperature.y;
+  ta = ambient_temperature;
   tr = ta;
 //this is an assumption but it is very close. Experimental data from
   if clo <= 0 then
@@ -226,5 +230,6 @@ equation
   annotation(
     uses(Modelica(version = "4.0.0")),
     Icon(graphics = {Ellipse(origin = {0, -60}, fillColor = {100, 100, 100}, fillPattern = FillPattern.Solid, lineThickness = 0.5, extent = {{-60, -20}, {60, 20}}), Rectangle(lineColor = {100, 100, 100}, fillColor = {100, 100, 100}, fillPattern = FillPattern.Solid, lineThickness = 0, extent = {{-60, 60}, {60, -60}}), Line(origin = {-60, 0}, points = {{0, -60}, {0, 60}}, thickness = 0.5), Line(origin = {60, 0}, points = {{0, 60}, {0, -60}}, thickness = 0.5), Ellipse(origin = {0, 60}, fillColor = {100, 100, 100}, fillPattern = FillPattern.Solid, lineThickness = 0.5, extent = {{-60, 20}, {60, -20}}), Ellipse(origin = {-1, 60}, fillColor = {150, 150, 150}, fillPattern = FillPattern.Solid, lineThickness = 0.5, extent = {{-49, 14}, {49, -14}}), Text(origin = {0, -1}, extent = {{-40, -33}, {40, 33}}, textString = "Gagge
-2-node")}, coordinateSystem(extent = {{-100, -100}, {100, 100}})));
+2-node")}, coordinateSystem(extent = {{-100, -100}, {100, 100}})),
+    experiment(StartTime = 0, StopTime = 86400, Tolerance = 1e-06, Interval = 60));
 end gagge_2_node;
